@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5DF248991C462BD700AE30D7 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 5DF248981C462BD700AE30D7 /* main.c */; };
+		5D9519701C462C35008F5015 /* Fundamentals.c in Sources */ = {isa = PBXBuildFile; fileRef = 5D95196B1C462C35008F5015 /* Fundamentals.c */; };
+		5D9519711C462C35008F5015 /* LSbox.c in Sources */ = {isa = PBXBuildFile; fileRef = 5D95196D1C462C35008F5015 /* LSbox.c */; };
+		5D9519721C462C35008F5015 /* Test.c in Sources */ = {isa = PBXBuildFile; fileRef = 5D95196F1C462C35008F5015 /* Test.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -23,8 +25,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5D95196B1C462C35008F5015 /* Fundamentals.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Fundamentals.c; sourceTree = "<group>"; };
+		5D95196C1C462C35008F5015 /* Fundamentals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Fundamentals.h; sourceTree = "<group>"; };
+		5D95196D1C462C35008F5015 /* LSbox.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = LSbox.c; sourceTree = "<group>"; };
+		5D95196E1C462C35008F5015 /* LSbox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LSbox.h; sourceTree = "<group>"; };
+		5D95196F1C462C35008F5015 /* Test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Test.c; sourceTree = "<group>"; };
 		5DF248951C462BD700AE30D7 /* LSModelCrypto */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LSModelCrypto; sourceTree = BUILT_PRODUCTS_DIR; };
-		5DF248981C462BD700AE30D7 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +63,11 @@
 		5DF248971C462BD700AE30D7 /* LSModelCrypto */ = {
 			isa = PBXGroup;
 			children = (
-				5DF248981C462BD700AE30D7 /* main.c */,
+				5D95196B1C462C35008F5015 /* Fundamentals.c */,
+				5D95196C1C462C35008F5015 /* Fundamentals.h */,
+				5D95196D1C462C35008F5015 /* LSbox.c */,
+				5D95196E1C462C35008F5015 /* LSbox.h */,
+				5D95196F1C462C35008F5015 /* Test.c */,
 			);
 			path = LSModelCrypto;
 			sourceTree = "<group>";
@@ -118,7 +128,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DF248991C462BD700AE30D7 /* main.c in Sources */,
+				5D9519711C462C35008F5015 /* LSbox.c in Sources */,
+				5D9519721C462C35008F5015 /* Test.c in Sources */,
+				5D9519701C462C35008F5015 /* Fundamentals.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +249,7 @@
 				5DF2489E1C462BD700AE30D7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
