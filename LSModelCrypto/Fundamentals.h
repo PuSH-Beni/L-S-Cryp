@@ -8,26 +8,37 @@
 
 #ifndef Fundamentals_h
 #define Fundamentals_h
-
+#define C11_SUPPORT 0
 
 
 #include <stdlib.h>
 #include <string.h>
-//#include <stdio.h>
-//#include <stdbool.h>
-//#include <stdint.h>
 
+/* If the compiler supports C11, 'stdbool.h' and 'stdint.h' can be used */
+#if C11_SUPPORT
+#include <stdbool.h>
+#include <stdint.h>
+#endif
 
+/*=========================================================*/
+/*   Definations     */
+/*=========================================================*/
+
+/* The length(bits) of one row of a matrix */
 #define LENG16 0
 #define LENG4 0
 
-
+/* The length(bits) of Sbox and Lbox */
+/* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
 #define DIM_L 8
 #define DIM_S 8
 #define ELEMS 64
 
 
-
+/* 'VECT'  ---> Indicates the digits of a row vector, i.e. if which is 8-bit, the use a BYTE  */
+/* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
+/* 'ONEV'  ---> Represents a identity vector valued '1', whose LSB is '1' */
+/* 'ZEROV' ---> Represents a zero vector */
 #if LENG16
 #define VECT WORD 
 #define IDENT 0x8000
@@ -47,18 +58,19 @@
 #define ZEROV 0x00
 #endif
 
-/*
+
+
+#if C11_SUPPORT
 typedef uint8_t             BYTE;
 typedef uint16_t            WORD;
 typedef uint32_t            DWORD;
 typedef uint64_t            QWORD;
-*/
-
- typedef unsigned char       BYTE;
- typedef unsigned short      WORD;
- typedef unsigned long       DWORD;
- typedef unsigned long long  QWORD;
-
+#else
+typedef unsigned char       BYTE;
+typedef unsigned short      WORD;
+typedef unsigned long       DWORD;
+typedef unsigned long long  QWORD;
+#endif
 
 
 typedef struct
@@ -66,13 +78,15 @@ typedef struct
 	VECT *vect;
 	int dim_row;
 	int dim_col;
-    char flags;	/* flags:
-                *   '0': norm
-                *   '1': unit matrix or indentit matrix
-                *   '2': error
-                */
+	char flags;	/* flags :
+				   '0x00': normal
+				   '0x01': unit matrix or indentity matrix
+				   '0x02': error
+				   '0x03': 'vect' points to an existing array
+				*/
 }Mat;
 
+/* Error types */
 typedef enum
 {
 	RES_OK = 0,
@@ -84,6 +98,13 @@ typedef enum
 	RES_INVALID_CAT
 
 }Res;
+
+
+
+
+/*=========================================================*/
+/*   Functions      */
+/*=========================================================*/
 
 Mat *newMat(int dim_row,  int dim_col, VECT *addr, BYTE flags);
 

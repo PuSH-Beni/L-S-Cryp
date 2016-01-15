@@ -9,12 +9,12 @@
 
 #include "Fundamentals.h"
 
-/*=====================*/
-/* private functions */
-/*=====================*/
+/*=========================================================*/
+/*   Private   Functions      */
+/*=========================================================*/
 
 
-/* caculate the num of bytes in one row */
+/* Caculate the num of bytes in one row */
 static
 int bytesOfRow(
 int col
@@ -27,7 +27,7 @@ int col
 }
 
 
-/* naive 'and' operation, return a byte with posbase as res */
+/* Another AND operation for two bytes, return a byte with posbase as res */
 static
 BYTE and(
 const BYTE byteBase,
@@ -53,7 +53,9 @@ int posAdjust
 	return res;
 }
 
-/* transe a vector from (j,i) to (i,j) */
+
+
+/* Transpose a vector from (j,i) to (i,j) */
 VECT transVector(
 	VECT orig,
 	int i,
@@ -71,7 +73,7 @@ VECT transVector(
 }
 
 
-/* get sum of a row */
+/* Get sum of a row */
 VECT sumFromRow(
 	VECT row,
 	int cols
@@ -87,11 +89,11 @@ VECT sumFromRow(
 }
 
 
-/*=====================*/
-/* pubulic functions */
-/*=====================*/
+/*=========================================================*/
+/*   Public   Functions      */
+/*=========================================================*/
 
-/* construce a new Mat instance */
+/* Construct a new Mat instance */
 Mat *newMat(
 	int dim_row,
 	int dim_col,
@@ -100,15 +102,16 @@ Mat *newMat(
 				*   '0x00': norm
 				*   '0x01': unit matrix or indentit matrix
 				*   '0x02': error
-				*   '0x03': the pointer 'vect' cannot use the func free()
+				*   '0x03': 'vect' points to an existing array
 				*/
 				)
 {
 	if (dim_row <= 0 || dim_col <= 0)return NULL;
+
 	Mat *retMat = (Mat *)malloc(sizeof(Mat));
 	if (retMat == NULL) return NULL;
 
-	/* memory allocate */
+	/* Memory allocation for vector-array */
 	if (addr == NULL){
 		retMat->vect = (VECT *)malloc(dim_row * sizeof(VECT));
 		memset(retMat->vect, 0, dim_row * sizeof(VECT));
@@ -126,7 +129,7 @@ Mat *newMat(
 		return NULL;
 	}
 
-	/* initialize */
+	/* Initialize */
 	retMat->dim_row = dim_row;
 	retMat->dim_col = dim_col;
 	
@@ -134,7 +137,7 @@ Mat *newMat(
 	return retMat;
 }
 
-/* deconstruct a Mat instance */
+/* Deconstruct a Mat instance */
 void deMat(
 	Mat *matrix
 	)
@@ -143,13 +146,15 @@ void deMat(
 	{
 		if (matrix->flags != 0x03){
 			free(matrix->vect);
+			matrix->vect = NULL;
 		}
 		free(matrix);
+		matrix = NULL;
 	}
 }
 
 
-/* transpositon */
+/* Transpositon */
 Mat *transpose(
 	const Mat *matA
 	)
@@ -158,11 +163,11 @@ Mat *transpose(
 	int row, col;
 	VECT rowToTrans, rowBeTransed;
 
-	/* memory allocated */
+	/* Memory allocated */
 	Mat *matRet = newMat(matA->dim_col, matA->dim_row, NULL, 0x00);
 	if (matRet == NULL) return NULL;
 
-	/* transposing */
+	/* Transposing */
 	for (row = 0; row < matA->dim_col; ++row){
 		matRet->vect[row] = ZEROV;
 		for (col = 0; col < matA->dim_row; ++col){
@@ -177,7 +182,7 @@ Mat *transpose(
 
 
 
-/* add operation, as same as XOR*/
+/* Add operation, as same as XOR */
 Mat *add(
 	const Mat *matA,
 	const Mat *matB
@@ -203,7 +208,7 @@ Mat *add(
 }
 
 
-/* bitAnd operation without mask, is just naive 'and' logic */
+/* BitAnd operation , as same as AND */
 Mat *bitAnd(
 	const Mat *matA,
 	const Mat *matB
@@ -229,7 +234,7 @@ Mat *bitAnd(
 }
 
 
-/* matrix multiply */
+/* Matrix multiplication */
 Mat *multiply(
 	const Mat *matA,
 	const Mat *matB
@@ -239,12 +244,14 @@ Mat *multiply(
 	if (matA->dim_col != matB->dim_row) return NULL;
 	if (matA->vect == NULL || matB->vect == NULL) return NULL;
 
-	/* memory allocate */
+	/* Memory allocation */
 	Mat *matRet = newMat(matA->dim_row, matB->dim_col, NULL, 0x00);
 	if (matRet == NULL) return NULL;
 
-	/* prepare */
+	/* Preparing a transposed matrix first */
 	Mat *matBT = transpose(matB);
+
+	/* Multipling */
 	int row, col;
 	for (row = 0; row < matA->dim_row; ++row){
 		VECT rowBeCaled = ZEROV;
@@ -265,7 +272,7 @@ Mat *multiply(
 
 	
 
-/* split a matrix to n parts(sub-mat) through the dimension r */
+/* Split a matrix to n parts(sub-mats) through the dimension r */
 Mat **split(
 	const Mat *matO,
 	const int n,
@@ -279,10 +286,10 @@ Mat **split(
 	if (matO == NULL) return NULL;
 	int index, subR, subC, bytesOfSubMat;
 
-	Mat **retMats = (Mat **)malloc(n*sizeof(Mat *));
+	Mat **retMats = (Mat **)malloc(n * sizeof(Mat *));
 	if (retMats == NULL) return NULL;
 
-	BYTE *ptrOfSubMat;
+	VECT *ptrOfSubMat;
 	if (r == 1){
 		if (matO->dim_row % n) return NULL;
 		subR = matO->dim_row / n;
@@ -304,11 +311,13 @@ Mat **split(
 
 	}
 	else return NULL;
+
+
 	return retMats;
 }
 
 
-/* catenate n mats through dimension r */
+/* Catenate n mats through dimension r */
 Mat *cat(
 	const Mat **mats,
 	const int n,
@@ -318,7 +327,7 @@ Mat *cat(
 	if (mats == NULL || *mats == NULL) return NULL;
 
 	int index, subR, subC, bytesOfSubMat;
-	BYTE *ptrOfBigMat;
+	VECT *ptrOfBigMat;
 	Mat *retMat;
 	subR = (*mats)->dim_row;
 	subC = (*mats)->dim_col;

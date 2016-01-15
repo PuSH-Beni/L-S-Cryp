@@ -9,8 +9,11 @@
 #include "LSbox.h"
 
 
+/*=========================================================*/
+/*   Private   Functions      */
+/*=========================================================*/
 
-
+/* A 4-bit sbox */
 static
 Mat *sbox4b(
     const Mat *mat4b
@@ -28,8 +31,7 @@ Mat *sbox4b(
 
     Mat *imd[4];
     Mat *product;
-	Mat *retMat;
-
+	
     product = bitAnd(rvect[1], rvect[2]);
     imd[0] = add(product, rvect[0]);
     deMat(product);
@@ -47,13 +49,14 @@ Mat *sbox4b(
     deMat(product);
 
 
-    /* generate the correct order */
+    /* Generate the correct order */
     /* d a b c */
     Mat *ordered[] = {imd[3], imd[0], imd[1], imd[2]};
 
+	Mat *retMat;
     retMat =  cat(ordered, 4, 1);
 
-    /* deallocate all pointers */
+    /* Deallocate all  */
     int i;
     for(i = 0; i < 4; ++i)
     {
@@ -66,7 +69,7 @@ Mat *sbox4b(
 
 
 
-
+/* DIM_L-bit L-box */
 static
 Mat *lboxes(
         const Mat *lin
@@ -79,47 +82,55 @@ Mat *lboxes(
 
 
 
-
+/* DIM_S-bit S-box */
 static
 Mat *sboxes(
         const Mat *sin
 )
 {
-    /* split matrix to rowsUpper and rowsLower*/
+    /* Split matrix to rowsUpper and rowsLower */
     Mat **rows;
     rows = split(sin, 2, 1);
 
+	
+    /* Get the Left one and Right one */
 	Mat *left, *right;
-	Mat *retMat;
-
-    /* 2 intermediate matrices */
     left = sbox4b(rows[0]);
 	right = rows[1];
 	
-    /* combine each 4-bit*/
+    /* Combine a bigger sbox, from 4-bit to 8-bit */
     int i;
     Mat *sum, *fout4b;
+	/* Fiestel Struct */
     for(i = 0; i < 3; ++i)
     {
+		/* Firstly, do 'XOR' with key_r */
         sum = add(left, key_r);
 
+		/* Secondly, through a 4-bit sbox */
         fout4b = sbox4b(sum);
         deMat(sum);
 
+		/* Then do 'XOR' with the right matrix */
         sum = add(right, fout4b);
         deMat(fout4b);
         deMat(right);
 
+		/* Finally, exchange each side */
         right = left;
         left = sum;
     }
 
 	deMat(rows[0]);
-    rows[0] = left;
-    rows[1] = right;
+    
+	/* Catenate those vectors to a matrix to return */
 
+	rows[0] = left;
+	rows[1] = right;
+	Mat *retMat;
     retMat = cat(rows, 2, 1);
 
+	/* Deallocate all  */
     deMat(left);
     deMat(right);
     free(rows);
@@ -129,13 +140,15 @@ Mat *sboxes(
 
 
 
-/* ============= */
-/* public funcs */
-/* ============= */
 
 
 
-/* before encrypt, do some pre-work to get the constant matrices */
+/*=========================================================*/
+/*   Public   Functions      */
+/*=========================================================*/
+
+
+/* Before encryption, do some pre-work to get the constant matrices */
 void newPreCal()
 {
 	matL = newMat(DIM_S, DIM_L, matLV, 0x03);
@@ -145,7 +158,9 @@ void newPreCal()
 	rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
 }
 
-/* after encrypt, deconstruct those matrices */
+
+
+/* After encryption, deconstruct those matrices */
 void dePostCal()
 {
 	deMat(matL);
@@ -158,9 +173,7 @@ void dePostCal()
 
 
 
-
-
-/* Encryption */
+/* Encryption begins */
 Mat *encryp(
         const Mat *plain,
 		const Mat *key
@@ -169,9 +182,7 @@ Mat *encryp(
 {
     if(plain == NULL || key == NULL || ROUNDS < 0) return NULL;
 
-
-    Mat  *roundIn, *sum, *sout, *lout;
-	
+    Mat  *roundIn, *sum, *sout, *lout;	
 
     roundIn = add(plain, key);
     int round_i;
