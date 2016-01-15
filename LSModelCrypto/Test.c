@@ -13,6 +13,7 @@ static FILE *fin, *fout;
 
 int main(){
 
+
     fin = fopen("in.txt","r");
     fout = fopen("out.txt","w");
 
@@ -24,94 +25,55 @@ int main(){
     printf("File Read Seccessfully\n");
 
     int i;
+	newPreCal();
 
-
-    Mat *matPlain = newMat(8, 8, 0);
+    Mat *matA = newMat(DIM_S, DIM_L, NULL, 0x00);
+	Mat *matB = newMat(DIM_S, DIM_L, NULL, 0x00);
 
     for (i = 0; i < 8; ++i) {
 		int tem;
         fscanf(fin, "%x ", &tem);
-		*(matPlain->vect + i) = (BYTE)tem;
-    }
-	
-    Mat *matMul  = newMat(8, 8, 0);
-    for (i = 0; i < 8; ++i) {
-        fscanf(fin, "%x ", matMul->vect + i);
+		*(matA->vect + i) = (BYTE)tem;
     }
 
-	/* split */
-	Mat **parts;
-    parts = split(matPlain, 2, 1);
-	for (i = 0; i < 4; ++i) {
-		printf("%x ", *(parts[0]->vect + i));
+	for (i = 0; i < 8; ++i) {
+		int tem;
+		fscanf(fin, "%x ", &tem);
+		*(matB->vect + i) = (BYTE)tem;
 	}
-	printf("\n ==>Next sub-mat:\n");
-	for (i = 0; i < 4; ++i) {
-		printf("%x ", *(parts[1]->vect + i));
-	}
-    
-   
+	   
 	printf("\n ==>Mat:\n");	
 	for (i = 0; i < 8; ++i) {
-		printf("%x ", *(matPlain->vect + i));
+		printf("%x ", *(matA->vect + i));
 	}
 
 	printf("\n ==>Mat2:\n");
 	for (i = 0; i < 8; ++i) {
-		printf( "%x ", *(matMul->vect + i));
+		printf( "%x ", *(matB->vect + i));
 	}
     
 
 	/* multiply */
 	Mat *prod;
-	prod = multiply(matPlain, matMul);
+	prod = multiply(matA, matB);
 	printf("\n ==>MULTI_RES:\n");
 	for (i = 0; i < 8; ++i) {
 		printf("%02x ", *(prod->vect + i));
 	}
 
-
-	/* sboxes */
-	/*Mat *sout;
-	sout = sboxes(matPlain, parts[1]);
-	printf("\n ==>Sboxes:\n");
-	for (i = 0; i < 8; ++i) {
-		printf("%02x ", *(sout->vect + i));
-	}*/
+	
 
 
-	/* Indentity Matrix as matL */
-	Mat *matI = newMat(DIM_S, DIM_L, 0);
-	identMat64(matI->vect);
-	printf("\n ==>Identity:\n");
-	for (i = 0; i < 8; ++i) {
-		printf("%02x ", *(matI->vect + i));
-	}
+	/* LS ENC */
 
-	/* Zero Matrix */
-	Mat *matZero = newMat(DIM_S, DIM_L, 0);
-	Mat *matZeroHalf = newMat(DIM_S/2, DIM_L, 0);
-    
-
-    /* key */
-    Mat *matK = matI;
-
-    /* enc */
-
-	Mat *roundOut;
-	for (i = 0; i < 8; ++i){
-		 roundOut = encryp(matPlain, matK, matZero, matI, matZeroHalf, ROUNDS);
-		 
-		 matPlain = roundOut;
-	}
-    
-
+	Mat *cipher;
+	cipher = encryp(matA, matB);
     printf("\n ==>LSout:\n");
     for (i = 0; i < 8; ++i) {
-        printf("%02x ", *(matPlain->vect + i));
+        printf("%02x ", *(cipher->vect + i));
     }
 
-
+	dePostCal();
     fclose(fin);
     fclose(fout);
     return 0;

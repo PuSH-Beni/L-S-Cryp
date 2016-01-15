@@ -8,6 +8,9 @@
 
 #include "LSbox.h"
 
+
+
+
 static
 Mat *sbox4b(
     const Mat *mat4b
@@ -26,6 +29,7 @@ Mat *sbox4b(
     Mat *imd[4];
     Mat *product;
 	Mat *retMat;
+
     product = bitAnd(rvect[1], rvect[2]);
     imd[0] = add(product, rvect[0]);
     deMat(product);
@@ -57,7 +61,6 @@ Mat *sbox4b(
         deMat(rvect[i]);
     }
 
-
 	return retMat;
 }
 
@@ -66,8 +69,7 @@ Mat *sbox4b(
 
 static
 Mat *lboxes(
-        const Mat *lin,
-        const Mat *matL
+        const Mat *lin
 )
 {
 	Mat *retMat;
@@ -80,8 +82,7 @@ Mat *lboxes(
 
 static
 Mat *sboxes(
-        const Mat *sin,
-        const Mat *key_r
+        const Mat *sin
 )
 {
     /* split matrix to rowsUpper and rowsLower*/
@@ -127,34 +128,31 @@ Mat *sboxes(
 }
 
 
-Mat *getRdConst(
-    const BYTE round,
-    const Mat* matL
-)
-{
-    Mat *rd = newMat(1, DIM_L, 0);
-    *(rd->vect) = round;
-    Mat *retMat;
-    retMat = lboxes(rd, matL);
-    return retMat;
-}
-
-
-
 
 /* ============= */
 /* public funcs */
 /* ============= */
 
-void identMat64(
-	BYTE *addr_st
-	)
+
+
+/* before encrypt, do some pre-work to get the constant matrices */
+void newPreCal()
 {
+	matL = newMat(DIM_S, DIM_L, matLV, 0x03);
+	key_r = newMat(DIM_S/2, DIM_L, keyRV, 0x03);
+	rdConst[0] = newMat(DIM_S, DIM_L, rdConst1V, 0x03);
+	rdConst[1] = newMat(DIM_S, DIM_L, rdConst2V, 0x03);
+	rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
+}
+
+/* after encrypt, deconstruct those matrices */
+void dePostCal()
+{
+	deMat(matL);
+	deMat(key_r);
 	int i;
-	BYTE row = 0x80;
-	for (i = 0; i < 8; ++i){
-		*(addr_st + i) = row;
-		row = row >> 1;
+	for (i = 0; i < ROUNDS; ++i){
+		deMat(rdConst[i]);
 	}
 }
 
@@ -165,23 +163,22 @@ void identMat64(
 /* Encryption */
 Mat *encryp(
         const Mat *plain,
-        const Mat *key,
-        const Mat *rdConst,
-        const Mat *matL,
-        const Mat *key_r,
-        const int nRound
+		const Mat *key
+
 )
 {
-    if(plain == NULL || key == NULL || nRound < 0) return NULL;
+    if(plain == NULL || key == NULL || ROUNDS < 0) return NULL;
+
 
     Mat  *roundIn, *sum, *sout, *lout;
+	
 
     roundIn = add(plain, key);
     int round_i;
-    for(round_i = 0; round_i < nRound; ++round_i)
+    for(round_i = 0; round_i < ROUNDS; ++round_i)
     {
-        sout = sboxes(roundIn, key_r);
-        lout = lboxes(sout, matL);
+        sout = sboxes(roundIn);
+        lout = lboxes(sout);
 
         deMat(roundIn);
         deMat(sout);
@@ -189,9 +186,11 @@ Mat *encryp(
         sum = add(lout, key);
         deMat(lout);
 
-        roundIn = add(sum, rdConst);
+        roundIn = add(sum, rdConst[round_i]);
         deMat(sum);
     }
+
+
     return roundIn;
 }
 

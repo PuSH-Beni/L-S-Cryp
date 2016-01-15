@@ -10,16 +10,42 @@
 #define Fundamentals_h
 
 
-#include <stdint.h>
+
 #include <stdlib.h>
 #include <string.h>
 //#include <stdio.h>
 //#include <stdbool.h>
+//#include <stdint.h>
 
-/*
-#define LENG16 1
+
+#define LENG16 0
 #define LENG4 0
-*/
+
+
+#define DIM_L 8
+#define DIM_S 8
+#define ELEMS 64
+
+
+
+#if LENG16
+#define VECT WORD 
+#define IDENT 0x8000
+#define ONEV  0x0001
+#define ZEROV 0x0000
+
+#elif LENG4
+#define VECT BYTE
+#define IDENT 0x08
+#define ONEV  0x01
+#define ZEROV 0x00
+
+#else
+#define VECT BYTE
+#define IDENT 0x80
+#define ONEV  0x01
+#define ZEROV 0x00
+#endif
 
 /*
 typedef uint8_t             BYTE;
@@ -27,23 +53,17 @@ typedef uint16_t            WORD;
 typedef uint32_t            DWORD;
 typedef uint64_t            QWORD;
 */
-/*
+
  typedef unsigned char       BYTE;
  typedef unsigned short      WORD;
  typedef unsigned long       DWORD;
  typedef unsigned long long  QWORD;
- */
 
-/*
-#if LENG16
-#define Row unsigned short
-#else
-#define Row unsigned char
-#endif
-*/
+
+
 typedef struct
 {
-    Row *vect;
+	VECT *vect;
 	int dim_row;
 	int dim_col;
     char flags;	/* flags:
@@ -65,7 +85,7 @@ typedef enum
 
 }Res;
 
-Mat *newMat(int dim_row,  int dim_col, BYTE flags);
+Mat *newMat(int dim_row,  int dim_col, VECT *addr, BYTE flags);
 
 void deMat(Mat *matrix);
 
@@ -74,6 +94,9 @@ Mat *bitAnd(const Mat *matA, const Mat *matB);
 
 /* add operation as same as  XOR */
 Mat *add(const Mat *matA, const  Mat *matB);
+
+/* transposition */
+Mat *transpose(const Mat *matA);
 
 /* matA x matB */
 Mat *multiply(const Mat *matA, const Mat *matB);
