@@ -8,11 +8,15 @@
 
 #ifndef Fundamentals_h
 #define Fundamentals_h
-#define C11_SUPPORT 0
 
+#define C11_SUPPORT 0
+#define MASK 1
+#define TEST 1
 
 #include <stdlib.h>
 #include <string.h>
+
+
 
 /* If the compiler supports C11, 'stdbool.h' and 'stdint.h' can be used */
 #if C11_SUPPORT
@@ -21,11 +25,12 @@
 #endif
 
 /*=========================================================*/
-/*   Definations     */
+/*   Definations About CONSTANTS    */
 /*=========================================================*/
 
-/* The length(bits) of one row of a matrix */
-#define LENG16 0
+
+/* The length(bits) of one row of a matrix_A */
+#define LENG8 1
 #define LENG4 0
 
 /* The length(bits) of Sbox and Lbox */
@@ -34,28 +39,18 @@
 #define DIM_S 8
 #define ELEMS 64
 
-
-/* 'VECT'  ---> Indicates the digits of a row vector, i.e. if which is 8-bit, the use a BYTE  */
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
-/* 'ONEV'  ---> Represents a identity vector valued '1', whose LSB is '1' */
-/* 'ZEROV' ---> Represents a zero vector */
-#if LENG16
-#define VECT WORD 
-#define IDENT 0x8000
-#define ONEV  0x0001
-#define ZEROV 0x0000
+#if LENG8
+#define LENGTH 8
+#define IDENT 0x80
+#define INDENT_MAT {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
+#define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
 #elif LENG4
-#define VECT BYTE
-#define IDENT 0x08
-#define ONEV  0x01
-#define ZEROV 0x00
-
-#else
-#define VECT BYTE
+#define LENGTH 4
 #define IDENT 0x80
-#define ONEV  0x01
-#define ZEROV 0x00
+#define INDENT_MAT {0x80, 0x40, 0x20, 0x10}
+#define ZERO_MAT {0x00, 0x00, 0x00, 0x00 }
 #endif
 
 
@@ -73,9 +68,17 @@ typedef unsigned long long  QWORD;
 #endif
 
 
+#if MASK
+
+#define MASKD 4
+
+#endif
+
+
+/* Definations */
 typedef struct
 {
-	VECT *vect;
+	BYTE *vect;
 	int dim_row;
 	int dim_col;
 	char flags;	/* flags :
@@ -85,6 +88,8 @@ typedef struct
 				   '0x03': 'vect' points to an existing array
 				*/
 }Mat;
+
+
 
 /* Error types */
 typedef enum
@@ -100,32 +105,86 @@ typedef enum
 }Res;
 
 
+#if TEST
+/*=========================================================*/
+/*    Private Functions      */
+/*=========================================================*/
+int *randOrder( );
 
+Mat *transpose(const Mat *matO);
+
+int bytesOfRow(int col);
+
+BYTE shiftBit(const BYTE orig,const int i, const int j);
+
+BYTE sumFromVect(BYTE Vect);
+
+#if MASK
+
+Mat **genRandMat( );
+
+Mat *hatA( );
+
+Mat *graveA( );
+
+Mat *acuteA( );
+
+Mat *tenserProduct(	const Mat *matX, const Mat *matY);
+
+Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
+
+#endif
+
+#endif
 
 /*=========================================================*/
 /*   Functions      */
 /*=========================================================*/
 
-Mat *newMat(int dim_row,  int dim_col, VECT *addr, BYTE flags);
+/* Initialize a new Matrix instance */
+Mat *newMat(int dim_row,  int dim_col, BYTE *addr, BYTE flags);
 
+/* Deallocate a Matrix */
 void deMat(Mat *matrix);
 
-/* bitand operation, matA . matB */
-Mat *bitAnd(const Mat *matA, const Mat *matB);
+#if MASK
+/* Encode(Mask) the plain text */
+Mat **encode(const Mat *matPlain);
 
-/* add operation as same as  XOR */
-Mat *add(const Mat *matA, const  Mat *matB);
+/* Decode(Unmask) the Secret text */
+Mat *decode(Mat **matsSecret);
 
-/* transposition */
-Mat *transpose(const Mat *matA);
+/* Refresh the old mask with a new mask */
+Res refreshing(Mat **matsSecret);
 
-/* matA x matB */
-Mat *multiply(const Mat *matA, const Mat *matB);
+/* Pre-calculate some matrices  */
+void setup();
 
-/* catenate n mats through the r-dimension */
+/* secProduct */
+Mat **bitAndWithMask(const Mat **matX, const Mat **matY);
+
+/* secAdd  */
+Mat *addWithMask(const Mat *matX, const  Mat *matY);
+#endif
+
+
+/* Multiplication between two matrices */
+/*  If MASK is '1', multiply(X, Y) equals:   matX x matY  */
+/*  Otherwise',     multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
+Mat *multiply(const Mat *matX, const Mat *matY);
+
+/* Simple bitand operation, as same as AND, i.e.'&' */
+Mat *bitAnd(const Mat *matX, const Mat *matY);
+
+/* Simple add operation, as same as  XOR, i.e. '^' */
+Mat *add(const Mat *matX, const  Mat *matY);
+
+
+
+/* Catenate n mats through the r-dimension */
 Mat *cat(const Mat **mats, const int n, const int r);
 
-/* split a matrix to n parts through the r-dimension */
+/* Split a matrix to n parts through the r-dimension */
 Mat **split (const Mat *matO, const int n, const int r);
 
 

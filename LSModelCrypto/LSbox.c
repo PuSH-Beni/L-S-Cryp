@@ -1,5 +1,5 @@
 //
-//  Lbox.c
+//  LSbox.c
 //  L-S-model
 //
 //  Created by benny on 16/1/5.
@@ -8,6 +8,18 @@
 
 #include "LSbox.h"
 
+/*=========================================================*/
+/*   Declarition     */
+/*=========================================================*/
+Mat  *rdConst[ROUNDS],  *key_r, *matL;
+#if MASK
+Mat *matT;
+#endif
+BYTE matLV[] = MAT_LV;
+BYTE keyRV[] = KEY_RV;
+BYTE rdConst1V[] = CONSTR1;
+BYTE rdConst2V[] = CONSTR2;
+BYTE rdConst3V[] = CONSTR3;
 
 /*=========================================================*/
 /*   Private   Functions      */
@@ -31,7 +43,7 @@ Mat *sbox4b(
 
     Mat *imd[4];
     Mat *product;
-	
+
     product = bitAnd(rvect[1], rvect[2]);
     imd[0] = add(product, rvect[0]);
     deMat(product);
@@ -68,7 +80,27 @@ Mat *sbox4b(
 }
 
 
+#if MASK
+/* Using matT, matL */
+static
+void lboxes(
+        Mat **matsLin,
+        Mat *matT,
+        Mat *matL
+        )
+{
+    Mat *matTem = matsLin[0];
+    matsLin[0] = multiply(matTem,matT);
+    deMat(matTem);
+    int i;
+    for(i = 0; i < MASKD; ++i){
+        matTem = matsLin[i];
+        matsLin[i] = multiply(matTem,matL);
+        deMat(matTem);
+    }
+}
 
+#else
 /* DIM_L-bit L-box */
 static
 Mat *lboxes(
@@ -76,9 +108,10 @@ Mat *lboxes(
 )
 {
 	Mat *retMat;
-	retMat = multiply(lin, matL);
+	retMat = multiply(lin,matL);
     return retMat;
 }
+#endif
 
 
 
@@ -149,13 +182,27 @@ Mat *sboxes(
 
 
 /* Before encryption, do some pre-work to get the constant matrices */
+#if MASK
+void newPreCal(Mat *matAT, Mat *matAI)
+#else
 void newPreCal()
+#endif
 {
-	matL = newMat(DIM_S, DIM_L, matLV, 0x03);
+	
 	key_r = newMat(DIM_S/2, DIM_L, keyRV, 0x03);
 	rdConst[0] = newMat(DIM_S, DIM_L, rdConst1V, 0x03);
 	rdConst[1] = newMat(DIM_S, DIM_L, rdConst2V, 0x03);
-	rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
+    rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
+    matL = newMat(DIM_S, DIM_L, matLV, 0x03);
+    
+#if MASK    
+    /* Get Matrix T  */
+    Mat *matRight= multiply(matAT,matL);
+    matT = multiply(matAI ,matRight);
+    
+    deMat(matRight);
+
+#endif
 }
 
 
@@ -163,18 +210,36 @@ void newPreCal()
 /* After encryption, deconstruct those matrices */
 void dePostCal()
 {
-	deMat(matL);
+	
 	deMat(key_r);
 	int i;
 	for (i = 0; i < ROUNDS; ++i){
 		deMat(rdConst[i]);
 	}
+#if MASK
+	deMat(matT);
+#endif
 }
 
 
-
+#if MASK
 /* Encryption begins */
-Mat *encryp(
+Mat *encrypto(
+              const Mat *plain,
+              const Mat *key,
+              const Mat *matL,
+              const Mat *matT
+              
+              )
+{
+	Mat *matRet = NULL;
+
+	return matRet;
+}
+
+#else
+/* Encryption begins */
+Mat *encrypto(
         const Mat *plain,
 		const Mat *key
 
@@ -204,7 +269,7 @@ Mat *encryp(
 
     return roundIn;
 }
-
+#endif
 
 
 
