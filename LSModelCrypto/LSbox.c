@@ -333,14 +333,23 @@ void newPreCal()
 	rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
 	matL = newMat(DIM_S, DIM_L, matLV, 0x03);
 
-#if MASK && A_USING   
+
+#if MASK
+	/* Transpose matrix L and matrix T, since multiply operation in masking mode is different from native multiplication */
+	Mat *tem = matL;
+
+	matL = transpose(matL);
+#if A_USING
 	/* Get Matrix T  */
 	Mat *matRight = multiply(matTransA, matL);
-	matT = multiply(matInvA, matRight);
+	tem = multiply(matInvA, matRight);
 
 	deMat(matRight);
+	matT = transpose(tem);
+	
 #endif
-
+	deMat(tem);
+#endif
 }
 
 
