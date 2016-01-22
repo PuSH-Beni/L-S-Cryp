@@ -396,8 +396,7 @@ int main(){
 	}
 
 #else
-	/* Pre-Calculate some constant matrices */
-	newPreCal();
+	
 
 	/* L-S-Model Eencryption */
 
@@ -408,7 +407,7 @@ int main(){
 	for (i = 0; i < LENGTH; ++i) {
 		printf("%02x ", *(cipher->vect + i));
 	}
-	dePostCal();
+
 #endif
 #endif
 

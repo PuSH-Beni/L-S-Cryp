@@ -383,7 +383,6 @@ Mat *encrypto(
 	setup();
 #endif
 	newPreCal();
-
 	
 	/* Encoded Plain */
 	Mat **matsMasked = encode(plain);
@@ -431,6 +430,7 @@ Mat *encrypto(
     if(plain == NULL || key == NULL || ROUNDS < 0) return NULL;
 
     Mat  *roundIn, *sum, *sout, *lout;	
+	newPreCal();
 
     roundIn = add(plain, key);
     int round_i;
@@ -449,7 +449,7 @@ Mat *encrypto(
         deMat(sum);
     }
 
-
+	dePostCal();
     return roundIn;
 }
 #endif

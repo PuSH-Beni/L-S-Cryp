@@ -12,7 +12,12 @@
 #define C11_SUPPORT 0
 #define TEST        1
 #define MASK        1
+
+#if MASK
+/* Toggle 'A_USING' option to mask text with matrix A or do without it  */
 #define A_USING     1
+#define MASKD		5
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +29,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #endif
+
 
 /*=========================================================*/
 /*   Definations About CONSTANTS    */
@@ -68,12 +74,6 @@ typedef unsigned long       DWORD;
 typedef unsigned long long  QWORD;
 #endif
 
-
-#if MASK
-
-#define MASKD 5
-
-#endif
 
 
 /* Definations */
