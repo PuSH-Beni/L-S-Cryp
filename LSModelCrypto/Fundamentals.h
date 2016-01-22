@@ -10,8 +10,9 @@
 #define Fundamentals_h
 
 #define C11_SUPPORT 0
-#define MASK 1
-#define TEST 1
+#define TEST        1
+#define MASK        1
+#define A_USING     1
 
 #include <stdlib.h>
 #include <string.h>
@@ -70,7 +71,7 @@ typedef unsigned long long  QWORD;
 
 #if MASK
 
-#define MASKD 4
+#define MASKD 5
 
 #endif
 
@@ -129,7 +130,7 @@ Mat *graveA( );
 
 Mat *acuteA( );
 
-Mat *tenserProduct(	const Mat *matX, const Mat *matY);
+Mat *tensorProduct(	const Mat *matX, const Mat *matY);
 
 Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
 
@@ -147,6 +148,9 @@ Mat *newMat(int dim_row,  int dim_col, BYTE *addr, BYTE flags);
 /* Deallocate a Matrix */
 void deMat(Mat *matrix);
 
+/* Deconstruct MASKD Mat instances */
+void deMats(Mat **matrices);
+
 #if MASK
 /* Encode(Mask) the plain text */
 Mat **encode(const Mat *matPlain);
@@ -161,16 +165,16 @@ Res refreshing(Mat **matsSecret);
 void setup();
 
 /* secProduct */
-Mat **bitAndWithMask(const Mat **matX, const Mat **matY);
+Mat **bitAndWithMask(const Mat **matEX, const Mat **matEY);
 
 /* secAdd  */
-Mat *addWithMask(const Mat *matX, const  Mat *matY);
+Mat **addWithMask(const Mat **matEX, const  Mat **matEY);
 #endif
 
 
 /* Multiplication between two matrices */
-/*  If MASK is '1', multiply(X, Y) equals:   matX x matY  */
-/*  Otherwise',     multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
+/*  If MASK is '1'( masked ), multiply(X, Y) equals:   matX x matY  */
+/*       Otherwise( unmask ), multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
 Mat *multiply(const Mat *matX, const Mat *matY);
 
 /* Simple bitand operation, as same as AND, i.e.'&' */

@@ -15,7 +15,7 @@
 /*   Definations     */
 /*=========================================================*/
 #define ROUNDS 3
-
+#define FEISTEL 3
 
 /*=========================================================*/
 /*   Definations About MATRICES    */
@@ -31,28 +31,13 @@
 
 
 
-
-
-
 /*=========================================================*/
 /*   Functions      */
 /*=========================================================*/
 
-#if MASK
 
-void newPreCal(Mat *matAT, Mat *matAI);
-
-Mat *encrypto(const Mat *plain, const Mat *key,const Mat *matL, const Mat *matT);
-#else
-
-void newPreCal();
 
 Mat *encrypto(const Mat *plain, const Mat *key);
-#endif
-
-
-void dePostCal();
-
 
 
 #endif /* Lbox_h */

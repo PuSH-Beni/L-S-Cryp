@@ -9,10 +9,12 @@
 #include "LSbox.h"
 
 /*=========================================================*/
-/*   Declarition     */
+/*   MARK: Declarition     */
 /*=========================================================*/
+static
 Mat  *rdConst[ROUNDS],  *key_r, *matL;
-#if MASK
+#if MASK && A_USING
+static
 Mat *matT;
 #endif
 BYTE matLV[] = MAT_LV;
@@ -22,10 +24,78 @@ BYTE rdConst2V[] = CONSTR2;
 BYTE rdConst3V[] = CONSTR3;
 
 /*=========================================================*/
-/*   Private   Functions      */
+/*   MARK: Private   Functions      */
 /*=========================================================*/
 
-/* A 4-bit sbox */
+#if MASK
+/* A 4-bit sbox (masked)*/
+static
+Mat **sbox4b(
+	const Mat **mats4b
+)
+{
+	if (mats4b[0]->dim_row != 4) return NULL;
+
+	Mat **matsTem[MASKD];
+	Mat *rvectWithMask[4][MASKD], **imdWithMask[4];
+
+	int indexOfMask;
+	for (indexOfMask = 0; indexOfMask < MASKD; ++indexOfMask){
+		matsTem[indexOfMask] = split(mats4b[indexOfMask], 4, 1);
+		int i;
+		for (i = 0; i < 4; ++i){
+			rvectWithMask[i][indexOfMask] = matsTem[indexOfMask][i];
+		}
+	}
+
+	// a = 1 x 2 + 0
+	// b = 2 x a + 3
+	// c = 1 x b + 2
+	// d = b x c + 1
+	Mat **product;
+
+	product = bitAndWithMask(rvectWithMask[1], rvectWithMask[2]);
+	imdWithMask[0] = addWithMask(product, rvectWithMask[0]);
+	deMats(product);
+
+	product = bitAndWithMask(rvectWithMask[2], imdWithMask[0]);
+	imdWithMask[1] = addWithMask(product, rvectWithMask[3]);
+	deMats(product);
+
+	product = bitAndWithMask(rvectWithMask[1], imdWithMask[1]);
+	imdWithMask[2] = addWithMask(product, rvectWithMask[2]);
+	deMats(product);
+
+	product = bitAndWithMask(imdWithMask[1], imdWithMask[2]);
+	imdWithMask[3] = addWithMask(product, rvectWithMask[1]);
+	deMats(product);
+	
+	/* Generate the correct order */
+	/* d a b c */
+	Mat **ordered[] = { imdWithMask[3], imdWithMask[0], imdWithMask[1], imdWithMask[2] };
+
+	Mat **retMat = (Mat **)malloc(MASKD * sizeof(Mat *));
+	for (indexOfMask = 0; indexOfMask < MASKD; ++indexOfMask){		
+		int i;
+		for (i = 0; i < 4; ++i){
+			deMat(matsTem[indexOfMask][i]);			
+			matsTem[indexOfMask][i] = ordered[i][indexOfMask];
+		}
+		retMat[indexOfMask] = cat(matsTem[indexOfMask], 4, 1);
+	}
+	
+
+	/* Deallocate all  */
+	int i;
+	for(i = 0; i < 4; ++i)
+	{
+		deMats(imdWithMask[i]);
+	}
+
+	return retMat;
+}
+#else
+/* A 4-bit sbox (unmask) */
 static
 Mat *sbox4b(
     const Mat *mat4b
@@ -78,22 +148,27 @@ Mat *sbox4b(
 
 	return retMat;
 }
-
+#endif
 
 #if MASK
 /* Using matT, matL */
+/* A Lboxes (masked) */
 static
 void lboxes(
-        Mat **matsLin,
-        Mat *matT,
-        Mat *matL
+        Mat **matsLin
         )
 {
-    Mat *matTem = matsLin[0];
-    matsLin[0] = multiply(matTem,matT);
+	/* z_1 = T  x x_1 */
+	Mat *matTem = matsLin[0];
+#if A_USING
+    matsLin[0] = multiply(matTem,matT);	
+#else 
+	matsLin[0] = multiply(matTem, matL);
+#endif
     deMat(matTem);
+
     int i;
-    for(i = 0; i < MASKD; ++i){
+    for(i = 1; i < MASKD; ++i){
         matTem = matsLin[i];
         matsLin[i] = multiply(matTem,matL);
         deMat(matTem);
@@ -101,7 +176,7 @@ void lboxes(
 }
 
 #else
-/* DIM_L-bit L-box */
+/* DIM_L-bit L-box (unmask) */
 static
 Mat *lboxes(
         const Mat *lin
@@ -114,8 +189,82 @@ Mat *lboxes(
 #endif
 
 
+#if MASK
+/* DIM_S-bit S-box (masked)*/
+static
+void sboxes(
+	Mat **matsSin
+)
+{
+	/* Split matrices to rowsUpper and rowsLower */
+	Mat **rows[MASKD], *left[MASKD], *right[MASKD];
 
-/* DIM_S-bit S-box */
+	int indexOfMask;
+	for (indexOfMask = 0; indexOfMask < MASKD; ++indexOfMask){
+		rows[indexOfMask] = split(matsSin[indexOfMask], 2, 1);
+		
+		/* Get the Left  and the Right parts */		
+		left[indexOfMask] = rows[indexOfMask][0];
+		right[indexOfMask] = rows[indexOfMask][1];
+	}
+	
+	
+	Mat **ptrOfL = left, **ptrOfR = right;
+	
+	/* Combine a bigger sbox, from 4-bit to 8-bit */
+	int i, theLast = MASKD - 1;
+	Mat **sum = NULL, **fout4b = NULL, *matOlder = NULL;
+
+	/* Feistel Struct Begins */
+	for (i = 0; i < FEISTEL; ++i)
+	{
+		/* Firstly, add key_r to the last masked component */
+		
+		matOlder = ptrOfL[theLast];
+		ptrOfL[theLast] = add(ptrOfL[theLast], key_r);
+		
+
+		/* Secondly, through a 4-bit sbox */
+		fout4b = sbox4b(ptrOfL);
+
+		/* Then do 'XOR' with the right matrix */
+		/* Get the NEXT LEFT part  */
+		
+		sum = addWithMask(ptrOfR, fout4b);
+		
+		deMats(fout4b);
+		deMats(ptrOfR);
+
+		/* Finally, recover the left matrices */
+		deMat(ptrOfL[theLast]);
+		ptrOfL[theLast] = matOlder;
+		ptrOfR = ptrOfL;
+		ptrOfL = sum;
+	}
+	
+
+	/* Catenate those vectors to a matrix to return */
+
+
+	for (indexOfMask = 0; indexOfMask < MASKD; ++indexOfMask){
+		rows[indexOfMask][0] = ptrOfL[indexOfMask];
+		rows[indexOfMask][1] = ptrOfR[indexOfMask];
+
+		deMat(matsSin[indexOfMask]);
+		matsSin[indexOfMask] = cat(rows[indexOfMask], 2, 1);
+		
+		/* Deallocate all  */
+		deMat(ptrOfL[indexOfMask]);
+		deMat(ptrOfR[indexOfMask]);
+		free(rows[indexOfMask]);
+	}
+	
+
+
+}
+#else
+
+/* DIM_S-bit S-box (unmask)*/
 static
 Mat *sboxes(
         const Mat *sin
@@ -128,14 +277,14 @@ Mat *sboxes(
 	
     /* Get the Left one and Right one */
 	Mat *left, *right;
-    left = sbox4b(rows[0]);
+    left = rows[0];
 	right = rows[1];
 	
     /* Combine a bigger sbox, from 4-bit to 8-bit */
     int i;
     Mat *sum, *fout4b;
-	/* Fiestel Struct */
-    for(i = 0; i < 3; ++i)
+	/* Feistel Struct */
+    for(i = 0; i < FEISTEL; ++i)
     {
 		/* Firstly, do 'XOR' with key_r */
         sum = add(left, key_r);
@@ -154,7 +303,6 @@ Mat *sboxes(
         left = sum;
     }
 
-	deMat(rows[0]);
     
 	/* Catenate those vectors to a matrix to return */
 
@@ -170,71 +318,106 @@ Mat *sboxes(
 
     return retMat;
 }
-
-
-
-
-
-
-/*=========================================================*/
-/*   Public   Functions      */
-/*=========================================================*/
+#endif
 
 
 /* Before encryption, do some pre-work to get the constant matrices */
-#if MASK
-void newPreCal(Mat *matAT, Mat *matAI)
-#else
+static
 void newPreCal()
-#endif
+
 {
-	
-	key_r = newMat(DIM_S/2, DIM_L, keyRV, 0x03);
+
+	key_r = newMat(DIM_S / 2, DIM_L, keyRV, 0x03);
 	rdConst[0] = newMat(DIM_S, DIM_L, rdConst1V, 0x03);
 	rdConst[1] = newMat(DIM_S, DIM_L, rdConst2V, 0x03);
-    rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
-    matL = newMat(DIM_S, DIM_L, matLV, 0x03);
-    
-#if MASK    
-    /* Get Matrix T  */
-    Mat *matRight= multiply(matAT,matL);
-    matT = multiply(matAI ,matRight);
-    
-    deMat(matRight);
+	rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
+	matL = newMat(DIM_S, DIM_L, matLV, 0x03);
 
+#if MASK && A_USING   
+	/* Get Matrix T  */
+	Mat *matRight = multiply(matTransA, matL);
+	matT = multiply(matInvA, matRight);
+
+	deMat(matRight);
 #endif
+
 }
 
 
 
 /* After encryption, deconstruct those matrices */
+static
 void dePostCal()
 {
-	
+
 	deMat(key_r);
 	int i;
 	for (i = 0; i < ROUNDS; ++i){
 		deMat(rdConst[i]);
 	}
-#if MASK
+#if MASK && A_USING
 	deMat(matT);
 #endif
 }
+
+
+
+/*=========================================================*/
+/*   MARK: Public   Functions      */
+/*=========================================================*/
+
+
 
 
 #if MASK
 /* Encryption begins */
 Mat *encrypto(
               const Mat *plain,
-              const Mat *key,
-              const Mat *matL,
-              const Mat *matT
+              const Mat *key
               
               )
 {
-	Mat *matRet = NULL;
+	if (plain == NULL || key == NULL || ROUNDS < 0) return NULL;
+	Mat  *matRoundKey,  *matTem;
+#if A_USING
+	setup();
+#endif
+	newPreCal();
 
-	return matRet;
+	
+	/* Encoded Plain */
+	Mat **matsMasked = encode(plain);
+	if (matsMasked == NULL) return NULL;
+
+	/* Add Key */
+	int theLast = MASKD - 1;
+	matTem = matsMasked[theLast];
+	matsMasked[theLast] = add(matsMasked[theLast], key);
+	deMat(matTem);
+
+	int indexOfRound;
+	for (indexOfRound = 0; indexOfRound < ROUNDS; ++indexOfRound)
+	{
+		sboxes(matsMasked);
+		lboxes(matsMasked);
+		
+
+		matRoundKey = add(rdConst[indexOfRound], key);
+
+		/* Add Key And Round Constant */
+		matTem = matsMasked[theLast];
+		matsMasked[theLast] = add(matsMasked[theLast], matRoundKey);
+
+		deMat(matTem);
+		deMat(matRoundKey);
+		
+	}
+
+	/* Decode Cipher */
+	Mat *cipher = decode(matsMasked);
+	dePostCal();
+	return cipher;
+		
 }
 
 #else
