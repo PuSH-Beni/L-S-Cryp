@@ -15,7 +15,7 @@
 
 #if MASK
 /* Toggle 'A_USING' option to mask text with matrix A or do without it  */
-#define A_USING     1
+#define A_USING     0
 #define MASKD		5
 #endif
 
