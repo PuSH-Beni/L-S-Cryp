@@ -8,25 +8,33 @@
 
 #ifndef Fundamentals_h
 #define Fundamentals_h
-
+/* C11 support or not */
 #define C11_SUPPORT 0
+/* While testing, toggle this option on */
 #define TEST        1
+/* Mask the text or not */
 #define MASK        1
-#define A_USING     1
-#define A_4b        1
-#define MASKD		5
 
+#if MASK
+/* Tree values of DIM_A
+*  0:  masked without matrix A
+*  4:  the length of matrix A is 4-bit
+*  8:  the length of matrix A is 8-bit
+*/
+#define DIM_A       4
+/* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
+#define MASKD       5
+#endif /* MASK */
 
 #include <stdlib.h>
 #include <string.h>
-
 
 
 /* If the compiler supports C11, 'stdbool.h' and 'stdint.h' can be used */
 #if C11_SUPPORT
 #include <stdbool.h>
 #include <stdint.h>
-#endif
+#endif /* C11_SUPPORT */
 
 
 /*=========================================================*/
@@ -35,20 +43,16 @@
 
 
 /* The length(bits) of one vect */
-#define LENG8 1
-#define LENG4 0
+#define LENG16 0
+#define LENG8  1
+#define LENG4  0
 
-/* The length(bits) of Sbox and Lbox */
+/* The length(bits) of S-box and L-box */
 /* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
 #define DIM_L 8
 #define DIM_S 8
 #define ELEMS 64
 
-#if A_4b
-#define DIM_A 4
-#else
-#define DIM_A 8
-#endif
 
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #if LENG8
@@ -62,7 +66,7 @@
 #define IDENT 0x80
 #define INDENT_MAT {0x80, 0x40, 0x20, 0x10}
 #define ZERO_MAT {0x00, 0x00, 0x00, 0x00 }
-#endif
+#endif /* LENGTH */
 
 
 
@@ -76,7 +80,7 @@ typedef unsigned char       BYTE;
 typedef unsigned short      WORD;
 typedef unsigned long       DWORD;
 typedef unsigned long long  QWORD;
-#endif
+#endif /* C11_SUPPORT */
 
 
 
@@ -88,7 +92,7 @@ typedef struct
 	int dim_col;
 	char flags;	/* flags :
 				   '0x00': normal
-				   '0x01': unit matrix or indentity matrix
+				   '0x01': unit matrix or identity matrix
 				   '0x02': error
 				   '0x03': 'vect' points to an existing array
 				*/
@@ -136,10 +140,9 @@ Mat *acuteA( );
 
 Mat *tensorProduct(	const Mat *matX, const Mat *matY);
 
+#endif /* MASK */
 
-#endif
-
-#endif
+#endif /* TEST */
 
 
 /*=========================================================*/
@@ -173,7 +176,8 @@ Mat **bitAndWithMask(const Mat **matEX, const Mat **matEY);
 
 /* secAdd  */
 Mat **addWithMask(const Mat **matEX, const  Mat **matEY);
-#endif
+
+#endif /* MASK */
 
 
 /* Multiplication between two matrices */

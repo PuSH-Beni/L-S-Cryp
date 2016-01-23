@@ -17,10 +17,7 @@
 #define ROUNDS 3
 #define FEISTEL 3
 
-/*=========================================================*/
-/*   Definations About MATRICES    */
-/*=========================================================*/
-
+/* About MATRICES    */
 /* Define some matrices used in encryption, i.e. key_r, matL, rdConst etc. */
 #define KEY_RV  {0x00, 0x00, 0x00, 0x00 }
 #define MAT_LV  {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
@@ -35,10 +32,6 @@
 /*   Functions      */
 /*=========================================================*/
 
-#if A_4b
-Mat *encryptoWithSmallA( const Mat *plain,const Mat *key);
-#else
 Mat *encrypto(const Mat *plain, const Mat *key);
-#endif
 
 #endif /* Lbox_h */
