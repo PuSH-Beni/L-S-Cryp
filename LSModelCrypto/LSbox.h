@@ -35,9 +35,10 @@
 /*   Functions      */
 /*=========================================================*/
 
-
-
+#if A_4b
+Mat *encryptoWithSmallA( const Mat *plain,const Mat *key);
+#else
 Mat *encrypto(const Mat *plain, const Mat *key);
-
+#endif
 
 #endif /* Lbox_h */

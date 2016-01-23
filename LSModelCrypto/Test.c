@@ -25,20 +25,20 @@
 
 #if MASK
 #define RAND_ORDER_TEST				     0
-#define TENSOR_PRODUCT_TEST				 0
+#define TENSOR_PRODUCT_TEST				 1
 #define GEN_RAND_MAT_TEST				 0
-#define SET_UP_TEST						 0
+#define SET_UP_TEST						 1
 #define ENCODE_TEST						 0
 #define REFRESH_TEST					 0
 #define BIT_AND_TEST					 0
 #define ADD_TEST						 0
 #endif
 
-#define MULTIPLY_TEST					 1
+#define MULTIPLY_TEST					 0
 #define ENCRYPT_TEST					 1
 
 
-
+extern Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
 
 /*=========================================================*/
 /* MARK: Main Function Begins    */
@@ -76,8 +76,13 @@ int main(){
     
     
 #if CONSTRUCT_MAT_TEST
+#if A_4b
 	Mat *matX = newMat(DIM_S, DIM_L, NULL, 0x00);
 	Mat *matY = newMat(DIM_S, DIM_L, NULL, 0x00);
+#else
+	Mat *matX = newMat(DIM_S, DIM_L, NULL, 0x00);
+	Mat *matY = newMat(DIM_S, DIM_L, NULL, 0x00);
+#endif
 #endif
 
 #if FILE_IO_TEST
@@ -178,8 +183,31 @@ int main(){
 #endif
 
 #if TENSOR_PRODUCT_TEST
+     /* MARK: TENSOR_PRODUCT */
+#if A_4b
+	Mat **matsX = split(matX,2,2);
+	Mat **matsY = split(matY,2,2);
+	Mat *catX = cat(matsX, 2, 2);
+	printf("\n ==> catRESfor X :\n");
+	for (j = 0; j < LENGTH; ++j){
+		printf("%02x ", *(catX->vect + j));
+	}
+	printf("\n");
+    printf("\n ==> splitRESfor X :\n");
+    for (j = 0; j < LENGTH; ++j){
+        printf("%02x ", *(matsX[1]->vect + j));
+    }
+    printf("\n");
+    printf("\n ==> splitRESfor Y :\n");
+    for (j = 0; j < LENGTH; ++j){
+        printf("%02x ", *(matsY[0]->vect + j));
+    }
+    printf("\n");
+	Mat *tensorProd = tensorProduct(matsX[1], matsY[1]);
+#else
 	Mat *tensorProd = tensorProduct(matX, matY);
-	printf("\n ==> tenserProd  :\n", i);
+#endif
+	printf("\n ==> tenserProd  :\n");
 
 	bts = bytesOfRow(tensorProd->dim_col);
 	BYTE *ptrOfTenserPd = tensorProd->vect;
@@ -194,7 +222,8 @@ int main(){
 #endif
 
 #if SET_UP_TEST
-
+    /* MARK: SET_UP */
+    
 	////A = inv(A) = trans(A) = E
 	//BYTE vecId1[] = INDENT_MAT;
 	//BYTE vecId2[] = INDENT_MAT;
@@ -209,53 +238,64 @@ int main(){
 
 	setup();
 
-	printf("\n ==> A  :\n", i);
-	for (j = 0; j < LENGTH; ++j){
+	printf("\n ==> A  :\n");
+	for (j = 0; j < DIM_A; ++j){
 		printf("%02x ", *(matA->vect + j));
 	}
 	printf("\n");
-	printf("\n ==> inv(A)  :\n", i);
-	for (j = 0; j < LENGTH; ++j){
+	printf("\n ==> inv(A)  :\n");
+	for (j = 0; j < DIM_A; ++j){
 		printf("%02x ", *(matInvA->vect + j));
 	}
 	printf("\n");
-	printf("\n ==> trans(A)  :\n", i);
-	for (j = 0; j < LENGTH; ++j){
+	printf("\n ==> trans(A)  :\n");
+	for (j = 0; j < DIM_A; ++j){
 		printf("%02x ", *(matTransA->vect + j));
 	}
 	printf("\n");
 
 	Mat *matE = multiply(matInvA, matTransA);
-	printf("\n ==> A x inv(A) :\n", i);
-	for (j = 0; j < LENGTH; ++j){
+	printf("\n ==> A x inv(A) :\n");
+	for (j = 0; j < DIM_A; ++j){
 		printf("%02x ", *(matE->vect + j));
 	}
 	printf("\n");
 
-	printf("\n ==> \\hat{A}  :\n", i);
-	for (j = 0; j < LENGTH ; ++j){
-		for (i = 0; i < LENGTH; ++i){
-			printf("%02x ", *(matHat->vect + j * LENGTH + i));
-		}
-		printf("\n");
-	}
+	printf("\n ==> \\hat{A}  :\n");
+    bts = bytesOfRow(matHat->dim_col);
+    BYTE *ptrOfHat = matHat->vect;
+    for (i = 0; i < matHat->dim_row; ++i){
+        for (j = 0; j < bts; ++j){
+            printf("%02x ", *ptrOfHat);
+            ++ptrOfHat;
+        }
+        printf("\n");
+    }
+    printf("\n");
+    
 	printf("\n");
-	printf("\n ==> \\grave{A}  :\n", i);
-	for (j = 0; j < LENGTH; ++j){
-		for (i = 0; i < LENGTH; ++i){
-			printf("%02x ", *(matGrave->vect + j * LENGTH + i));
-		}
-		printf("\n");
-	}
-	printf("\n");
-	printf("\n ==> \\acute{A}  :\n", i);
-	for (j = 0; j < LENGTH; ++j){
-		for (i = 0; i < LENGTH; ++i){
-			printf("%02x ", *(matAcute->vect + j * LENGTH + i));
-		}
-		printf("\n");
-	}
-	printf("\n");
+	printf("\n ==> \\grave{A}  :\n");
+    bts = bytesOfRow(matGrave->dim_col);
+    BYTE *ptrOfGrave = matGrave->vect;
+    for (i = 0; i < matGrave->dim_row; ++i){
+        for (j = 0; j < bts; ++j){
+            printf("%02x ", *ptrOfGrave);
+            ++ptrOfGrave;
+        }
+        printf("\n");
+    }
+    printf("\n");
+	printf("\n ==> \\acute{A}  :\n");
+    bts = bytesOfRow(matAcute->dim_col);
+    BYTE *ptrOfAcute = matAcute->vect;
+    for (i = 0; i < matAcute->dim_row; ++i){
+        for (j = 0; j < bts; ++j){
+            printf("%02x ", *ptrOfAcute);
+            ++ptrOfAcute;
+        }
+        printf("\n");
+    }
+    printf("\n");
 #endif
 
 #if ENCODE_TEST
@@ -281,7 +321,8 @@ int main(){
 	}
 #endif
 
-#if REFRESH_TEST		
+#if REFRESH_TEST
+    /* MARK: REFRESH */
 	/* Refreshing matEX */
 	printf("\n ===> Refreshing the masks\n");
 	res = refreshing(matEX);
@@ -346,6 +387,7 @@ int main(){
 	printf("\n");
 #endif
 #if BIT_AND_TEST
+     /* MARK: BITAND */
 	/*
 	Mat **matsX[MASKD];
 	Mat **matsY[MASKD];
@@ -383,7 +425,17 @@ int main(){
 
 
 #if ENCRYPT_TEST
-#if MASK
+     /* MARK: ENCRYPTO */
+#if A_4b
+    /* L-S-Model Eencryption */
+    
+    Mat *cipher;
+    cipher = encryptoWithSmallA(matX, matY);    
+    printf("\n ==>LSout:\n");
+    for (i = 0; i < LENGTH; ++i) {
+        printf("%02x ", *(cipher->vect + i));
+    }
+#elif MASK
 
 	/* L-S-Model Eencryption */
 

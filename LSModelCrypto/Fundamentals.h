@@ -12,12 +12,10 @@
 #define C11_SUPPORT 0
 #define TEST        1
 #define MASK        1
-
-#if MASK
-/* Toggle 'A_USING' option to mask text with matrix A or do without it  */
 #define A_USING     1
+#define A_4b        1
 #define MASKD		5
-#endif
+
 
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +34,7 @@
 /*=========================================================*/
 
 
-/* The length(bits) of one row of a matrix_A */
+/* The length(bits) of one vect */
 #define LENG8 1
 #define LENG4 0
 
@@ -45,6 +43,12 @@
 #define DIM_L 8
 #define DIM_S 8
 #define ELEMS 64
+
+#if A_4b
+#define DIM_A 4
+#else
+#define DIM_A 8
+#endif
 
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #if LENG8
@@ -116,7 +120,7 @@ Mat *transpose(const Mat *matO);
 
 int bytesOfRow(int col);
 
-BYTE shiftBit(const BYTE orig,const int i, const int j);
+BYTE shiftBit(const BYTE orig, int i,  int j);
 
 BYTE sumFromVect(BYTE Vect);
 
@@ -132,11 +136,11 @@ Mat *acuteA( );
 
 Mat *tensorProduct(	const Mat *matX, const Mat *matY);
 
-Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
 
 #endif
 
 #endif
+
 
 /*=========================================================*/
 /*   Functions      */
@@ -186,10 +190,10 @@ Mat *add(const Mat *matX, const  Mat *matY);
 
 
 /* Catenate n mats through the r-dimension */
-Mat *cat(const Mat **mats, const int n, const int r);
+Mat *cat(const Mat **mats,  int n,  int r);
 
 /* Split a matrix to n parts through the r-dimension */
-Mat **split (const Mat *matO, const int n, const int r);
+Mat **split (const Mat *matO,  int n,  int r);
 
 
 
