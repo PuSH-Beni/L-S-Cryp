@@ -197,22 +197,21 @@ Mat *sbox4b(
 static
 void lboxes(
             Mat **matsLin,
-            int direction
+            int direction /* direction == 0, means the left */
             )
 {
     Mat *matTem = matsLin[0];
     int i;
-    if (!direction) {
+	if (!direction) {
         matsLin[0] = multiply(matTem,Tleft);
     }else{
         matsLin[0] = multiply(matTem,Tright);
-        for (i = 0; i < matsLin[0]->dim_row; ++i) {
+        /*for (i = 0; i < matsLin[0]->dim_row; ++i) {
             matsLin[0]->vect[i] = matsLin[0]->vect[i] >> 4;
-        }
+        }*/
     }
     deMat(matTem);
     matsLin[0]->dim_col = 8;
-
 
 
     for(i = 1; i < MASKD; ++i){
@@ -226,7 +225,7 @@ void lboxes(
     }
 }
 
-#elif DIM_A == 8 || DIM_A == 0
+#else /* DIM_A ==8 or 0 */
 static
 void lboxes(
             Mat **matsLin
@@ -248,8 +247,9 @@ void lboxes(
         deMat(matTem);
     }
 }
+#endif /* DIM_A */
 
-#else /* Unmask */
+#else /* Unmask  */
 /* DIM_L-bit L-box (unmask) */
 static
 Mat *lboxes(
@@ -417,12 +417,20 @@ void newPreCal()
     Lleft = LLR[0];
     Lright = LLR[1];
 
-    /* Get Matrix T  */
-    Mat *matsTem[2];
-    matsTem[0] = matInvA;
-    matsTem[1] = matInvA;
-
-    Mat *matDoubleInv = cat(matsTem, 2, 2);
+    /* Get Matrix T  */ 
+    //Mat *matDoubleInv = cat(matsTem, 2, 2);
+	/*  matDoubleInv looks like: 
+    	| inv(A), 0      |
+	    |      0, inv(A) | */
+	Mat *matDoubleInv = newMat(DIM_A*2, DIM_A*2, NULL, 0x00);
+	if (matDoubleInv == NULL) return NULL;
+	memmove(matDoubleInv->vect, matInvA->vect, DIM_A * sizeof(BYTE));
+	memmove(matDoubleInv->vect + DIM_A, matInvA->vect, DIM_A * sizeof(BYTE));
+	/* Shift the bits of the right-lower matrix */
+	int i;
+	for (i = DIM_A; i < matDoubleInv->dim_row; ++i){
+		matDoubleInv->vect[i] = matDoubleInv->vect[i] >> 4;
+	}
 
     Mat *matRightPart = multiply(matTransA, Lleft);
     Tleft= multiply(matDoubleInv, matRightPart);
@@ -474,12 +482,12 @@ void dePostCal()
 /*   MARK: Public   Functions      */
 /*=========================================================*/
 
-#if MASK
+
 Mat *encrypto(
                 const Mat *plain,
                 const Mat *key
             )
-
+#if MASK
 #if DIM_A == 4
 {
     setup();
@@ -552,12 +560,12 @@ Mat *encrypto(
     return cipher;
 }
 
-#elif DIM_A == 8 || DIM_A == 0
+#else /* DIM_A == 8 or 0 */
 {
     if (plain == NULL || key == NULL || ROUNDS < 0) return NULL;
     Mat  *matRoundKey,  *matTem;
 
-#if DIM_A == 0
+#if DIM_A /* DIM_A != 0 */
     setup();
 #endif
 
@@ -576,8 +584,9 @@ Mat *encrypto(
     for (indexOfRound = 0; indexOfRound < ROUNDS; ++indexOfRound)
     {
         sboxes(matsMasked, key_r);
-
+		
         lboxes(matsMasked);
+		
 
 
         matRoundKey = add(rdConst[indexOfRound], key);
@@ -599,7 +608,7 @@ Mat *encrypto(
     return cipher;
 
 }
-
+#endif /* DIM_A  */
 
 #else /* Unmask */
 /* Encryption begins */
@@ -630,4 +639,3 @@ Mat *encrypto(
     return roundIn;
 }
 #endif /* MASK */
-

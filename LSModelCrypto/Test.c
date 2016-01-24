@@ -25,9 +25,9 @@
 
 #if MASK
 #define RAND_ORDER_TEST				     0
-#define TENSOR_PRODUCT_TEST				 1
+#define TENSOR_PRODUCT_TEST				 0
 #define GEN_RAND_MAT_TEST				 0
-#define SET_UP_TEST						 1
+#define SET_UP_TEST						 0
 #define ENCODE_TEST						 0
 #define REFRESH_TEST					 0
 #define BIT_AND_TEST					 0
@@ -37,9 +37,12 @@
 #define MULTIPLY_TEST					 0
 #define ENCRYPT_TEST					 1
 
-
-extern Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
-
+#if MASK
+#if DIM_A
+extern
+Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
+#endif
+#endif
 /*=========================================================*/
 /* MARK: Main Function Begins    */
 /*=========================================================*/
@@ -184,7 +187,7 @@ int main(){
 
 #if TENSOR_PRODUCT_TEST
      /* MARK: TENSOR_PRODUCT */
-#if A_4b
+#if DIM_A == 4
 	Mat **matsX = split(matX,2,2);
 	Mat **matsY = split(matY,2,2);
 	Mat *catX = cat(matsX, 2, 2);
@@ -419,36 +422,13 @@ int main(){
 
 #endif
 
-#endif
+#endif /* MASK */
 
 
 
 
 #if ENCRYPT_TEST
      /* MARK: ENCRYPTO */
-#if A_4b
-    /* L-S-Model Eencryption */
-    
-    Mat *cipher;
-    cipher = encryptoWithSmallA(matX, matY);    
-    printf("\n ==>LSout:\n");
-    for (i = 0; i < LENGTH; ++i) {
-        printf("%02x ", *(cipher->vect + i));
-    }
-#elif MASK
-
-	/* L-S-Model Eencryption */
-
-	Mat *cipher;
-	cipher = encrypto(matX, matY);
-
-	printf("\n ==>LSout:\n");
-	for (i = 0; i < LENGTH; ++i) {
-		printf("%02x ", *(cipher->vect + i));
-	}
-
-#else
-	
 
 	/* L-S-Model Eencryption */
 
@@ -461,7 +441,7 @@ int main(){
 	}
 
 #endif
-#endif
+
 
 
 
