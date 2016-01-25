@@ -1,3 +1,5 @@
 *.swp
 .gitignore
 *.xcactivitylog
+\DerivedData
+*.xcodeproj
