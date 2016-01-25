@@ -423,7 +423,7 @@ void newPreCal()
     	| inv(A), 0      |
 	    |      0, inv(A) | */
 	Mat *matDoubleInv = newMat(DIM_A*2, DIM_A*2, NULL, 0x00);
-	if (matDoubleInv == NULL) return NULL;
+	
 	memmove(matDoubleInv->vect, matInvA->vect, DIM_A * sizeof(BYTE));
 	memmove(matDoubleInv->vect + DIM_A, matInvA->vect, DIM_A * sizeof(BYTE));
 	/* Shift the bits of the right-lower matrix */
@@ -531,8 +531,11 @@ Mat *encrypto(
 
         deMats(maskedL);
         deMats(maskedR);
-
+        
         splitHorizonParts(matsMix, maskedL, maskedR, MASKD);
+        
+        //Res res =refreshing(maskedL);
+        //res =refreshing(maskedR);
 
         Mat *roundKeyL = add(rdCLeft[indexOfRound], keyLR[0]);
         Mat *roundKeyR = add(rdCRight[indexOfRound], keyLR[1]);
@@ -586,8 +589,8 @@ Mat *encrypto(
         sboxes(matsMasked, key_r);
 		
         lboxes(matsMasked);
-		
-
+        
+        //Res res =refreshing(matsMasked);
 
         matRoundKey = add(rdConst[indexOfRound], key);
 
@@ -624,7 +627,7 @@ Mat *encrypto(
     {
         sout = sboxes(roundIn);
         lout = lboxes(sout);
-
+        
         deMat(roundIn);
         deMat(sout);
 

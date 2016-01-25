@@ -13,7 +13,7 @@
 /* While testing, toggle this option on */
 #define TEST        1
 /* Mask the text or not */
-#define MASK        0
+#define MASK        1
 
 #if MASK
 /* Tree values of DIM_A

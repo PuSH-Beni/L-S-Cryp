@@ -79,13 +79,8 @@ int main(){
     
     
 #if CONSTRUCT_MAT_TEST
-#if A_4b
 	Mat *matX = newMat(DIM_S, DIM_L, NULL, 0x00);
 	Mat *matY = newMat(DIM_S, DIM_L, NULL, 0x00);
-#else
-	Mat *matX = newMat(DIM_S, DIM_L, NULL, 0x00);
-	Mat *matY = newMat(DIM_S, DIM_L, NULL, 0x00);
-#endif
 #endif
 
 #if FILE_IO_TEST
