@@ -1,0 +1,88 @@
+File Read Seccessfully
+
+ ==>Mat X :
+b1 b2 b3 b4 b5 b6 b7 b8 
+
+ ==>Mat Y  :
+a1 a2 a3 a4 a5 a6 a7 a8 
+
+CPU: Intel(R) Core(TM) i5-3470, 3.20GHz
+
+=======================
+Unmask:
+==> begins
+===> done
+187ms
+
+=======================
+Masked:
+-----------------------	
+Without Matrix A:
+MASKD == 2:
+==> begins
+===> done
+634ms
+
+MASKD == 3:
+==> begins
+===> done
+1178ms
+
+MASKD == 4:
+==> begins
+===> done
+2094ms
+
+MASKD == 5:
+==> begins
+===> done
+3355ms
+
+------------------------
+Matrix A (8-bit)
+MASKD == 2:
+==> begins
+===> done
+928ms
+
+MASKD == 3:
+==> begins
+===> done
+1706ms
+
+MASKD == 4:
+==> begins
+===> done
+2745ms
+
+MASKD == 5:
+==> begins
+===> done
+4076ms
+
+-----------------------
+Matrix A (4-bit)
+MASKD == 2:
+==> begins
+===> done
+1604ms
+
+MASKD == 3:
+==> begins
+===> done
+2968ms
+
+MASKD == 4:
+==> begins
+===> done
+5193ms
+
+MASKD == 5:
+==> begins
+===> done
+7489ms
+
+
+
+
+

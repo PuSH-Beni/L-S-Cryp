@@ -21,9 +21,9 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       4
+#define DIM_A       8
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
-#define MASKD       5
+#define MASKD       4
 #endif /* MASK */
 
 #include <stdlib.h>

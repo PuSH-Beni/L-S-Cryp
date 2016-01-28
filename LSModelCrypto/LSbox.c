@@ -34,9 +34,24 @@ Mat *matT;
 
 BYTE matLV[] = MAT_LV;
 BYTE keyRV[] = KEY_RV;
-BYTE rdConst1V[] = CONSTR1;
-BYTE rdConst2V[] = CONSTR2;
-BYTE rdConst3V[] = CONSTR3;
+
+BYTE rdConst1V[]  = CONSTR1;
+BYTE rdConst2V[]  = CONSTR2;
+BYTE rdConst3V[]  = CONSTR3;
+BYTE rdConst4V[]  = CONSTR4;
+BYTE rdConst5V[]  = CONSTR5;
+BYTE rdConst6V[]  = CONSTR6;
+BYTE rdConst7V[]  = CONSTR7;
+BYTE rdConst8V[]  = CONSTR8;
+
+BYTE rdConst9V[]  = CONSTR9;
+BYTE rdConst10V[] = CONSTR10;
+BYTE rdConst11V[] = CONSTR11;
+BYTE rdConst12V[] = CONSTR12;
+BYTE rdConst13V[] = CONSTR13;
+BYTE rdConst14V[] = CONSTR14;
+BYTE rdConst15V[] = CONSTR15;
+BYTE rdConst16V[] = CONSTR16;
 
 /*=========================================================*/
 /*   MARK: Private   Functions      */
@@ -406,6 +421,23 @@ void newPreCal()
     rdConst[0] = newMat(DIM_S, DIM_L, rdConst1V, 0x03);
     rdConst[1] = newMat(DIM_S, DIM_L, rdConst2V, 0x03);
     rdConst[2] = newMat(DIM_S, DIM_L, rdConst3V, 0x03);
+	rdConst[3] = newMat(DIM_S, DIM_L, rdConst4V, 0x03);
+	rdConst[4] = newMat(DIM_S, DIM_L, rdConst5V, 0x03);
+	rdConst[5] = newMat(DIM_S, DIM_L, rdConst6V, 0x03);
+	rdConst[6] = newMat(DIM_S, DIM_L, rdConst7V, 0x03);
+	rdConst[7] = newMat(DIM_S, DIM_L, rdConst8V, 0x03);
+
+	rdConst[8] = newMat(DIM_S, DIM_L, rdConst9V, 0x03);
+	rdConst[9] = newMat(DIM_S, DIM_L, rdConst10V, 0x03);
+	rdConst[10] = newMat(DIM_S, DIM_L, rdConst11V, 0x03);
+	rdConst[11] = newMat(DIM_S, DIM_L, rdConst12V, 0x03);
+	rdConst[12] = newMat(DIM_S, DIM_L, rdConst13V, 0x03);
+	rdConst[13] = newMat(DIM_S, DIM_L, rdConst14V, 0x03);
+	rdConst[14] = newMat(DIM_S, DIM_L, rdConst15V, 0x03);
+	rdConst[15] = newMat(DIM_S, DIM_L, rdConst16V, 0x03);
+
+
+
     matL = newMat(DIM_S, DIM_L, matLV, 0x03);
 
 
