@@ -13,7 +13,7 @@
 /* While testing, toggle this option on */
 #define TEST        1
 /* Mask the text or not */
-#define MASK        1
+#define MASK        0
 
 #if MASK
 /* Tree values of DIM_A
@@ -21,7 +21,7 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       8
+#define DIM_A       0
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       4
 #endif /* MASK */
@@ -181,7 +181,7 @@ Mat **addWithMask(const Mat **matEX, const  Mat **matEY);
 
 
 /* Multiplication between two matrices */
-/*  If MASK is '1'( masked ), multiply(X, Y) equals:   matX x matY  */
+/*  If MASK == '1'( masked ), multiply(X, Y) equals:   matX x matY  */
 /*       Otherwise( unmask ), multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
 Mat *multiply(const Mat *matX, const Mat *matY);
 

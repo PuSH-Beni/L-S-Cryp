@@ -37,7 +37,7 @@
 #define MULTIPLY_TEST					 0
 #define ENCRYPT_TEST					 1
 
-#define TIMES							 100
+#define TIMES							 1
 
 #if MASK
 #if DIM_A
@@ -89,11 +89,11 @@ int main(){
 
 	/* Dectect the input file existed or not */
 	if (fin == NULL || fout == NULL) {
-		fprintf(fout,"File Doesnt Exist\n");
+		printf( "File Doesnt Exist\n");
 		return 1;
 	}
 	else{
-		fprintf(fout, "File Read Seccessfully\n");
+		printf(  "File Read Seccessfully\n");
 	}
 
 	/* Read the first matrix */
@@ -103,11 +103,11 @@ int main(){
 		*(matX->vect + i) = (BYTE)tem;
 	}
 	/* Show it */
-	fprintf(fout,"\n ==>Mat X :\n");
+	printf( "\n ==>Mat X :\n");
 	for (i = 0; i < LENGTH; ++i) {
-		fprintf(fout,"%x ", *(matX->vect + i));
+		printf( "%x ", *(matX->vect + i));
 	}
-	fprintf(fout,"\n");
+	printf( "\n");
 
 	/* Read the second matrix */
 	for (i = 0; i < LENGTH; ++i) {
@@ -116,11 +116,11 @@ int main(){
 		*(matY->vect + i) = (BYTE)tem;
 	}
 	/* Show it */
-	fprintf(fout,"\n ==>Mat Y  :\n");
+	printf( "\n ==>Mat Y  :\n");
 	for (i = 0; i < LENGTH; ++i) {
-		fprintf(fout,"%x ", *(matY->vect + i));
+		printf( "%x ", *(matY->vect + i));
 	}
-	fprintf(fout,"\n");
+	printf( "\n");
 #endif
 
 #if TRANSPOSE_TEST
@@ -430,25 +430,25 @@ int main(){
 	/* L-S-Model Eencryption */
 
 	Mat *cipher;
-	fprintf(fout,"==> begins\n");
+	printf( "==> begins\n");
 	time_t starts, ends;
 	//time(&starts);
 	double time_Start = (double)clock();
 	for (j = 0; j < TIMES; ++j){
 		cipher = encrypto(matX, matY);
 
-		/*printf("\n ==>LSout:\n");
+		printf("\n ==>LSout:\n");
 		for (i = 0; i < LENGTH; ++i) {
 			printf("%02x ", *(cipher->vect + i));
-		}*/
+		}
 		deMat(cipher);
 		//printf("===> the %d-th times finished\n", j);
 	}
 	//time(&ends);
 	double time_End = (double)clock();
-	fprintf(fout, "===> done\n");
+	printf("\n ===> done\n");
 	//double secs = difftime(ends, starts);
-	fprintf(fout,"%.fms\n", (time_End - time_Start));
+	printf("%.fms\n", (time_End - time_Start));
 #endif
 
 

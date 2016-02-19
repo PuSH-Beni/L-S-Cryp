@@ -86,11 +86,11 @@ BYTE shiftBit(
 {
     BYTE unit = IDENT >> j;
     BYTE tem = unit & orig;
-    
+
     if (j > i) tem = tem << (j - i);
     else if (j < i) tem = tem >> (i - j);
     else return tem;
-    
+
     return tem;
 }
 
@@ -129,7 +129,7 @@ int *randOrder(
     //srand((WORD)time(NULL));
 
     int *nums = (int *)malloc(LENGTH * sizeof(int));
-    if (nums == NULL) return NULL;
+    if (nums == NULL)return NULL;
     int i;
 
     for (i = 0; i < LENGTH; ++i){
@@ -156,11 +156,11 @@ Mat *transpose(
                )
 {
     if (matO == NULL) return NULL;
-    
+
     /* Memory allocated */
     Mat *matRet = newMat(matO->dim_col, matO->dim_row, NULL, 0x00);
     if (matRet == NULL) return NULL;
-
+    matRet->dim_col = matRet->dim_row;
     int bytesOfRO = bytesOfRow(matO->dim_col);
     int bytesOfRR = bytesOfRow(matO->dim_row);
 
@@ -237,7 +237,7 @@ Mat **genRandMat(
         rowToAdd &= (~zeroToSet);
 
 #if DIM_A == 4
-		rowToAdd &= 0xf0;
+    rowToAdd &= 0xf0;
 #endif
         matE->vect[i] ^= rowToAdd;
 
@@ -321,6 +321,7 @@ Mat *acuteA(
 
     Mat *matRight = newMat(DIM_A * DIM_A, DIM_A, NULL, 0x00);
     if (matRight == NULL) return NULL;
+
 
 
     int i, j;
@@ -919,46 +920,46 @@ Mat **bitAndWithMask(
 
 /*  Matrix Multiply(Transposed), (A, B) == A x B^T   */
 Mat *multiply(
-	const Mat *matX,
-	const Mat *matY
-	)
+  const Mat *matX,
+  const Mat *matY
+  )
 {
-	if (matX == NULL || matY == NULL) return NULL;
-	if (matX->dim_col != matY->dim_col) return NULL;
-	if (matX->vect == NULL || matY->vect == NULL) return NULL;
+  if (matX == NULL || matY == NULL) return NULL;
+  if (matX->dim_col != matY->dim_col) return NULL;
+  if (matX->vect == NULL || matY->vect == NULL) return NULL;
 
-	/* Memory allocation */
-	Mat *matRet = newMat(matX->dim_row, matY->dim_row, NULL, 0x00);
-	if (matRet == NULL) return NULL;
+  /* Memory allocation */
+  Mat *matRet = newMat(matX->dim_row, matY->dim_row, NULL, 0x00);
+  if (matRet == NULL) return NULL;
 
 
-	/* Multipling */
-	int row, col;
-	BYTE *ptrOfMatRet, *ptrOfMatX, *ptrOfMatY;
-	for (row = 0; row < matX->dim_row; ++row){
-		for (col = 0; col < matY->dim_row; ++col)
-		{
-			int bytesOfRX = bytesOfRow(matX->dim_col);
-			int bytesOfRR = bytesOfRow(matY->dim_row);
+  /* Multipling */
+  int row, col;
+  BYTE *ptrOfMatRet, *ptrOfMatX, *ptrOfMatY;
+  for (row = 0; row < matX->dim_row; ++row){
+    for (col = 0; col < matY->dim_row; ++col)
+    {
+      int bytesOfRX = bytesOfRow(matX->dim_col);
+      int bytesOfRR = bytesOfRow(matY->dim_row);
 
-			int cntsVect = col / LENGTH;
-			int offset = col % LENGTH;
-			ptrOfMatRet = matRet->vect + row * bytesOfRR + cntsVect;
+      int cntsVect = col / LENGTH;
+      int offset = col % LENGTH;
+      ptrOfMatRet = matRet->vect + row * bytesOfRR + cntsVect;
 
-			int i;
-			BYTE vectTem;
-			for (i = 0; i < bytesOfRX; ++i){
-				ptrOfMatX = matX->vect + row * bytesOfRX + i;
-				ptrOfMatY = matY->vect + col * bytesOfRX + i;
-				vectTem = (*ptrOfMatX) & (*ptrOfMatY);
-				vectTem = sumFromVect(vectTem);
-				vectTem = vectTem >> offset;
-				(*ptrOfMatRet) ^= vectTem;
-			}
-		}
-	}
+      int i;
+      BYTE vectTem;
+      for (i = 0; i < bytesOfRX; ++i){
+        ptrOfMatX = matX->vect + row * bytesOfRX + i;
+        ptrOfMatY = matY->vect + col * bytesOfRX + i;
+        vectTem = (*ptrOfMatX) & (*ptrOfMatY);
+        vectTem = sumFromVect(vectTem);
+        vectTem = vectTem >> offset;
+        (*ptrOfMatRet) ^= vectTem;
+      }
+    }
+  }
 
-	return matRet;
+  return matRet;
 }
 
 
@@ -975,8 +976,8 @@ Mat *add(
     if (matX->vect == NULL || matY->vect == NULL) return NULL;
 
     /* Memory allocate */
-	int col = matX->dim_col;
-	int row = matX->dim_row;
+  int col = matX->dim_col;
+  int row = matX->dim_row;
 
     Mat *retMat = newMat(row, col, NULL, 0x00);
 
