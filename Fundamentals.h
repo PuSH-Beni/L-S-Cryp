@@ -13,7 +13,12 @@
 /* While testing, toggle this option on */
 #define TEST        1
 /* Mask the text or not */
-#define MASK        0
+#define MASK        1
+
+/* DIM_L can be '16' or '8' */
+#define DIM_L	    16
+#define DIM_S		8
+#define ELEMS		(DIM_L * DIM_S)
 
 #if MASK
 /* Tree values of DIM_A
@@ -21,9 +26,14 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       0
+#define DIM_A       8
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       4
+#if DIM_A
+#define DIVIDE_PARTS (DIM_L / DIM_A)
+#else
+#define DIVIDE_PARTS 1
+#endif
 #endif /* MASK */
 
 #include <stdlib.h>
@@ -42,30 +52,26 @@
 /*=========================================================*/
 
 
-/* The length(bits) of one vect */
+/* Use BYTE or WORD */
 #define LENG16 0
 #define LENG8  1
-#define LENG4  0
 
-/* The length(bits) of S-box and L-box */
-/* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
-#define DIM_L 8
-#define DIM_S 8
-#define ELEMS 64
-
-
-/* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #if LENG8
 #define LENGTH 8
+/* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #define IDENT 0x80
-#define INDENT_MAT {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
+#define IDENT_MAT {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
+#define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+/* The length(bits) of S-box and L-box */
+/* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
+
+
+#elif LENG16
+#define LENGTH 16
+#define IDENT  0x8000
+#define INDENT_MAT {0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 }
 #define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
-#elif LENG4
-#define LENGTH 4
-#define IDENT 0x80
-#define INDENT_MAT {0x80, 0x40, 0x20, 0x10}
-#define ZERO_MAT {0x00, 0x00, 0x00, 0x00 }
 #endif /* LENGTH */
 
 
@@ -124,7 +130,7 @@ Mat *transpose(const Mat *matO);
 
 int bytesOfRow(int col);
 
-BYTE shiftBit(const BYTE orig, int i,  int j);
+BYTE shiftBit(BYTE orig, int i,  int j);
 
 BYTE sumFromVect(BYTE Vect);
 
@@ -156,7 +162,7 @@ Mat *newMat(int dim_row,  int dim_col, BYTE *addr, BYTE flags);
 void deMat(Mat *matrix);
 
 /* Deconstruct MASKD Mat instances */
-void deMats(Mat **matrices);
+void deMats(Mat **matrices, int cnt);
 
 #if MASK
 /* Encode(Mask) the plain text */

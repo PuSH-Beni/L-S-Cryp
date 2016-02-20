@@ -21,20 +21,20 @@
 #define RAND_TEST						 0
 #define CONSTRUCT_MAT_TEST				 1
 #define FILE_IO_TEST					 1
-#define TRANSPOSE_TEST					 0
+#define TRANSPOSE_TEST					 1
+#define MULTIPLY_TEST					 1
+#define SPLIT_CAT_TEST					 1
 
 #if MASK
-#define RAND_ORDER_TEST				     0
 #define TENSOR_PRODUCT_TEST				 0
 #define GEN_RAND_MAT_TEST				 0
 #define SET_UP_TEST						 0
 #define ENCODE_TEST						 0
-#define REFRESH_TEST					 0
 #define BIT_AND_TEST					 0
 #define ADD_TEST						 0
 #endif
 
-#define MULTIPLY_TEST					 0
+
 #define ENCRYPT_TEST					 1
 
 #define TIMES							 1
@@ -51,7 +51,7 @@ Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
 int main(){
 
 	FILE *fin, *fout;
-	int i, j, bts;
+	int i, j, k, bts;
 	Res res;
 	Mat *matTem;
 	fin = fopen("in.txt", "r");
@@ -65,7 +65,7 @@ int main(){
 #if RAND_TEST
       
     int origArray[] = { 0, 1, 2, 3, 4, 5, 6, 7};
-    for (i = 0; i < LENGTH; ++i) {
+    for (i = 0; i < DIM_L; ++i) {
         int j = rand() % LENGTH;
         
         int tem = origArray[j];
@@ -73,7 +73,7 @@ int main(){
         origArray[i] = tem;
         
     }
-    for (i = 0; i < LENGTH; ++i) {
+    for (i = 0; i < DIM_L; ++i) {
         printf("%d ",origArray[i]) ;
     }
     printf("\n");
@@ -97,27 +97,27 @@ int main(){
 	}
 
 	/* Read the first matrix */
-	for (i = 0; i < LENGTH; ++i) {
+	for (i = 0; i < DIM_L; ++i) {
 		int tem;
 		fscanf(fin, "%x ", &tem);
 		*(matX->vect + i) = (BYTE)tem;
 	}
 	/* Show it */
 	printf( "\n ==>Mat X :\n");
-	for (i = 0; i < LENGTH; ++i) {
+	for (i = 0; i < DIM_L; ++i) {
 		printf( "%x ", *(matX->vect + i));
 	}
 	printf( "\n");
 
 	/* Read the second matrix */
-	for (i = 0; i < LENGTH; ++i) {
+	for (i = 0; i < DIM_L; ++i) {
 		int tem;
 		fscanf(fin, "%x ", &tem);
 		*(matY->vect + i) = (BYTE)tem;
 	}
 	/* Show it */
 	printf( "\n ==>Mat Y  :\n");
-	for (i = 0; i < LENGTH; ++i) {
+	for (i = 0; i < DIM_L; ++i) {
 		printf( "%x ", *(matY->vect + i));
 	}
 	printf( "\n");
@@ -130,8 +130,7 @@ int main(){
 	printf("\n ==>Transpose_RES:\n");
 	for (i = 0; i < matTransX->dim_row; ++i){
 		for (j = 0; j < bts; ++j){
-			printf("%02x ", *ptrOfTransX);
-			++ptrOfTransX;
+			printf("%02x ", *ptrOfTransX++);
 		}
 	}
 	printf("\n");
@@ -142,27 +141,49 @@ int main(){
 
 	/* Matrix-Multiply */
 
-	Mat *prod;
-	prod = multiply(matX, matY);
+	Mat *prod = multiply(matX, matY);
 	printf("\n ==>MULTI_RES:\n");
-	for (i = 0; i < LENGTH; ++i) {
-		printf("%02x ", *(prod->vect + i));
+	bts = bytesOfRow(prod->dim_col);
+	BYTE *ptrOfProd= prod->vect;
+	for (i = 0; i < prod->dim_row; ++i){
+		for (j = 0; j < bts; ++j){
+			printf("%02x ", *ptrOfProd++);
+		}
 	}
 	printf("\n");
 #endif
 
+#if SPLIT_CAT_TEST
+	int slices = 8;
+	Mat **splitRes = split(matX, slices, 2);
+	Mat *catRes = cat(splitRes, slices, 2);
+	printf("\n ==>split_RES:\n");
+	BYTE *ptrOfMat;
+	for (k = 0; k < slices; ++k){
+		ptrOfMat = splitRes[k]->vect;
+		bts = bytesOfRow(splitRes[k]->dim_col);
+		for (i = 0; i < splitRes[k]->dim_row; ++i){
+			for (j = 0; j < bts; ++j){
+				printf("%02x ", *ptrOfMat++);
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
+	printf("\n ==>cat_RES:\n");
+	ptrOfMat = catRes->vect;
+	bts = bytesOfRow(catRes->dim_col);
+	for (i = 0; i < catRes->dim_row; ++i){
+		for (j = 0; j < bts; ++j){
+			printf("%02x ", *ptrOfMat++);
+		}
+	}
+	printf("\n");
+	
+#endif
 
 
 #if MASK
-
-#if RAND_ORDER_TEST
-	int *nums = randOrder();
-	printf("\n ==>Rand_Order_RES:\n");
-	for (i = 0; i < LENGTH; ++i){
-		printf("%u ", nums[i]);
-	}
-	printf("\n");
-#endif
 
 #if GEN_RAND_MAT_TEST
 	Mat **matsAs = genRandMat();
@@ -225,9 +246,9 @@ int main(){
     /* MARK: SET_UP */
     
 	////A = inv(A) = trans(A) = E
-	//BYTE vecId1[] = INDENT_MAT;
-	//BYTE vecId2[] = INDENT_MAT;
-	//BYTE vecId3[] = INDENT_MAT;
+	//BYTE vecId1[] = IDENT_MAT;
+	//BYTE vecId2[] = IDENT_MAT;
+	//BYTE vecId3[] = IDENT_MAT;
 	//Mat *matE1 = newMat(LENGTH, LENGTH, vecId1, 0x03);
 	//Mat *matE2 = newMat(LENGTH, LENGTH, vecId2, 0x03);
 	//Mat *matE3 = newMat(LENGTH, LENGTH, vecId3, 0x03);
@@ -254,7 +275,7 @@ int main(){
 	}
 	printf("\n");
 
-	Mat *matE = multiply(matInvA, matTransA);
+	matE = multiply(matInvA, matTransA);
 	printf("\n ==> A x inv(A) :\n");
 	for (j = 0; j < DIM_A; ++j){
 		printf("%02x ", *(matE->vect + j));
@@ -321,53 +342,6 @@ int main(){
 	}
 #endif
 
-#if REFRESH_TEST
-    /* MARK: REFRESH */
-	/* Refreshing matEX */
-	printf("\n ===> Refreshing the masks\n");
-	res = refreshing(matEX);
-	if(!res) printf("---> refreshed succeed\n");
-	else return 1;
-	for (i = 0; i < MASKD; ++i){
-		printf("\n ==> Refreshed_X [%d] :\n", i);
-		for (j = 0; j < LENGTH; ++j){
-			printf("%02x ", *(matEX[i]->vect + j));
-		}
-		printf("\n");
-	}
-
-	
-	Mat *matXres = decode(matEX);
-
-	printf("\n ==> after refreshing, Represent X :\n", i);
-	for (j = 0; j < LENGTH; ++j){
-		printf("%02x ", *(matXres->vect + j));
-	}
-	printf("\n");
-
-
-	/* Refreshing matEY */
-	printf("\n ===> Refreshing the masks\n");
-	res = refreshing(matEY);
-	if (!res) printf("---> refreshed succeed\n");
-	else return 1;
-	for (i = 0; i < MASKD; ++i){
-		printf("\n ==> Refreshed_Y [%d] :\n", i);
-		for (j = 0; j < LENGTH; ++j){
-			printf("%02x ", *(matEY[i]->vect + j));
-		}
-		printf("\n");
-	}
-	Mat *matYres = decode(matEY);
-
-	printf("\n ==> after refreshing, Represent Y :\n", i);
-	for (j = 0; j < LENGTH; ++j){
-		printf("%02x ", *(matYres->vect + j));
-	}
-	printf("\n");
-	
-#endif
-
 #if ADD_TEST
 	Mat **matSum = addWithMask(matEX, matEY);
 	for (i = 0; i < MASKD; ++i){
@@ -430,15 +404,15 @@ int main(){
 	/* L-S-Model Eencryption */
 
 	Mat *cipher;
-	printf( "==> begins\n");
-	time_t starts, ends;
+	printf( "\n ==> begins\n");
+	//time_t starts, ends;
 	//time(&starts);
 	double time_Start = (double)clock();
 	for (j = 0; j < TIMES; ++j){
 		cipher = encrypto(matX, matY);
 
-		printf("\n ==>LSout:\n");
-		for (i = 0; i < LENGTH; ++i) {
+		printf("==>LSout:\n");
+		for (i = 0; i < DIM_L; ++i) {
 			printf("%02x ", *(cipher->vect + i));
 		}
 		deMat(cipher);
