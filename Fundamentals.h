@@ -26,9 +26,9 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       8
+#define DIM_A       4
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
-#define MASKD       4
+#define MASKD       3
 #if DIM_A
 #define DIVIDE_PARTS (DIM_L / DIM_A)
 #else
