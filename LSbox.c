@@ -17,12 +17,14 @@ static
 Mat  *rdConst[ROUNDS],  *key_r, *matL;
 
 #if MASK
-#if DIVIDE
+
+#if DIVIDE_PARTS != 1
 static
-Mat **keyRoundSlices, **rdConstSlices[ROUNDS], **LSlices, *TSlices[SLICES];
+//Mat  *rdCLeft[ROUNDS], *rdCRight[ROUNDS], *Lleft, *Lright, *Tleft, *Tright, **keyRoundLR;
+Mat **keyRoundSlices, **rdConstSlices[ROUNDS], **LSlices, *TSlices[DIVIDE_PARTS];
 #endif
 
-#if DIM_A
+#if DIM_A != 0
 extern
 Mat *matA, *matInvA, *matTransA;
 static
@@ -185,19 +187,15 @@ Mat *sbox4b(
 /* Using matT, matL */
 /* A Lboxes (masked) */
 #if MASK
-#if DIVIDE
+#if DIVIDE_PARTS != 1
 static
 void lboxes(
             Mat **matsLin,
-            int direction /* direction == 0, means the left part */
+            int direction /* direction == 0, means the left */
             )
 {
     Mat *matTem = matsLin[0];
-#if DIM_A
 	matsLin[0] = multiply(matTem, TSlices[direction]);
-#else
-    matsLin[0] = multiply(matTem, LSlices[direction]);
-#endif
 	deMat(matTem);
  
 	int indexOfMask;
@@ -208,7 +206,7 @@ void lboxes(
     }
 }
 
-#else /* no dividing */
+#else /* DIVIDE_PARTS == 1, DIM_A == DIM_L || DIM_A == 0 */
 static
 void lboxes(
             Mat **matsLin
@@ -230,7 +228,7 @@ void lboxes(
         deMat(matTem);
     }
 }
-#endif /* DIVIDE */
+#endif /* DIVIDE_PARTS */
 
 #else /* Unmask  */
 /* DIM_L-bit L-box (unmask) */
@@ -379,6 +377,7 @@ Mat *sboxes(
 
 
 /* Before encryption, do some pre-work to get the constant matrices */
+static
 void newPreCal()
 
 {
@@ -407,123 +406,79 @@ void newPreCal()
 
 
 #if MASK
-#if DIVIDE
+
+#if DIVIDE_PARTS != 1
 	/* Get Matrix T- and L-*/
-	LSlices = split(matL, SLICES, 2);
-#if DIM_A
+	LSlices = split(matL, DIVIDE_PARTS, 2);
+
 	/* Get Matrix T  */
 	/*  matDoubleInv looks like:
 		| inv(A), 0      |
 		|      0, inv(A) | */
 
-	Mat *matInvAs = newMat(DIM_A * SLICES, DIM_A * SLICES, NULL, 0x00);
+	Mat *matWithInvA = newMat(DIM_A * DIVIDE_PARTS, DIM_A * DIVIDE_PARTS, NULL, 0x00);
 
-	int btsOfRow = bytesOfRow(matInvAs->dim_col);
+	int btsOfRow = bytesOfRow(matWithInvA->dim_col);
 	int btsOfMat = matInvA->dim_row * bytesOfRow(matInvA->dim_col);
 	int indexOfSlices;
-#if DIM_A == 4  &&  DIM_L == 8 /* particular case*/
-	memmove(matInvAs->vect, matInvA->vect, btsOfMat * sizeof(BYTE));
-	memmove(matInvAs->vect + DIM_A, matInvA->vect, btsOfMat * sizeof(BYTE));
+#if DIM_A == 4  && DIM_L == 8	
+	/* particular case*/
+	memmove(matWithInvA->vect, matInvA->vect, btsOfMat * sizeof(BYTE));
+	memmove(matWithInvA->vect + DIM_A, matInvA->vect, btsOfMat * sizeof(BYTE));
 	/* Shift  bits  */
 	int i;
-	for (i = DIM_A; i != DIM_L; ++i) matInvAs->vect[i] >>= 4;
-#else  /* general cases */
+	for(i = DIM_A; i != DIM_L; ++i) matWithInvA->vect[i] >>= 4;				
+#else 
+	/* general cases */
 	int indexOfByte, indexOfDest = 0;
-	for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+	for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 #if DIM_A == 4
-		BYTE oddFlag = (BYTE)indexOfSlices & 0x01;
+		BYTE oddFlag = (BYTE)indexOfSlices & 0x01; 
 #endif
 		for (indexOfByte = 0; indexOfByte != btsOfMat; ++indexOfByte){
 #if DIM_A == 4
-			matInvAs->vect[indexOfDest] = oddFlag ? matInvA->vect[indexOfByte] >> 4
-				: matInvA->vect[indexOfByte];
+			matWithInvA->vect[indexOfDest] = oddFlag ? matInvA->vect[indexOfByte] >> 4
+													 : matInvA->vect[indexOfByte];
 #else
-			matInvAs->vect[indexOfDest] = matInvA->vect[indexOfByte];
+			matWithInvA->vect[indexOfDest] = matInvA->vect[indexOfByte];
 #endif
 			indexOfDest += btsOfRow;
 		}
 #if DIM_A == 4
-		indexOfDest += oddFlag ? 1 : 0;
+		indexOfDest += oddFlag ? 1  : 0;
 #else
 		indexOfDest += 1;
 #endif /* DIM_A == 4*/
 	}
-#endif/*  invAs, general cases  */
-
-	for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+#endif/* get matWithInvA */
+		
+	for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 		Mat *matRightPart = multiply(matTransA, LSlices[indexOfSlices]);
-		TSlices[indexOfSlices] = multiply(matInvAs, matRightPart);
+		TSlices[indexOfSlices] = multiply(matWithInvA, matRightPart);
 		deMat(matRightPart);
 	}
-	deMat(matInvAs);
-#endif  /* DIM_A */
+	deMat(matWithInvA);
+
 	int indexOfRounds;
 	for (indexOfRounds = 0; indexOfRounds != ROUNDS; ++indexOfRounds)
 	{
-		rdConstSlices[indexOfRounds] = split(rdConst[indexOfRounds], SLICES, 2);
+		rdConstSlices[indexOfRounds] = split(rdConst[indexOfRounds], DIVIDE_PARTS, 2);
 	}
-	keyRoundSlices = split(key_r, SLICES, 2);
-/****************************************************************************/
+	keyRoundSlices = split(key_r, DIVIDE_PARTS, 2);
 
-#elif SLICES != 1 /* No dividing */    
-	/* *******************************************
-	 * Get Matrix T
-	 *
-	 *	T = | inv(A), 0      |  *  L  * | A, 0 |
-	 *	    |      0, inv(A) |          | 0, A |
-	 ******************************************** */
-	Mat *matInvAs = newMat(DIM_A * SLICES, DIM_A * SLICES, NULL, 0x00);
-	Mat *matTransAs = newMat(DIM_A * SLICES, DIM_A * SLICES, NULL, 0x00);
+	
 
-	int btsOfRow = bytesOfRow(matInvAs->dim_col);
-	int btsOfMat = matInvA->dim_row * bytesOfRow(matInvA->dim_col);
-	int indexOfSlices;
-#if DIM_A == 4  &&  DIM_L == 8 /* particular case*/
-	memmove(matInvAs->vect, matInvA->vect, btsOfMat * sizeof(BYTE));
-	memmove(matInvAs->vect + DIM_A, matInvA->vect, btsOfMat * sizeof(BYTE));
+ /*   splitHorizonParts(rdConst, rdCLeft, rdCRight, ROUNDS);
+    keyRoundLR = split(key_r, 2, 2);*/
 
-	memmove(matTransAs->vect, matTransA->vect, btsOfMat * sizeof(BYTE));
-	memmove(matTransAs->vect + DIM_A, matTransA->vect, btsOfMat * sizeof(BYTE));
-	/* Shift  bits  */
-	int i;
-	for (i = DIM_A; i != DIM_L; ++i) {
-		matInvAs->vect[i] >>= 4;
-		matTransAs->vect[i] >>= 4;
-	}
-#else /* general cases */
-	int indexOfByte, indexOfDest = 0;
-	for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
-#if DIM_A == 4
-		BYTE oddFlag = (BYTE)indexOfSlices & 0x01;
-#endif
-		for (indexOfByte = 0; indexOfByte != btsOfMat; ++indexOfByte){
-#if DIM_A == 4
-			matInvAs->vect[indexOfDest] = oddFlag ? matInvA->vect[indexOfByte] >> 4
-				: matInvA->vect[indexOfByte];
-			matWithA->vect[indexOfDest] = oddFlag ? matTransA->vect[indexOfByte] >> 4
-				: matTransA->vect[indexOfByte];
-#else
-			matInvAs->vect[indexOfDest] = matInvA->vect[indexOfByte];
-			matTransAs->vect[indexOfDest] = matTransA->vect[indexOfByte];
-#endif
-			indexOfDest += btsOfRow;
-		}
-#if DIM_A == 4
-		indexOfDest += oddFlag ? 1 : 0;
-#else
-		indexOfDest += 1;
-#endif /* DIM_A == 4*/
-	}
+#elif DIM_A /* DIVIDE_PARTS == 1 && DIM_A != 0*/
+    /* Get Matrix T  */
+    Mat *matRight = multiply(matTransA, matL);
+    matT = multiply(matInvA, matRight);
 
-#endif /* general cases*/
-	Mat *matRight = multiply(matTransAs, matL);
-	matT = multiply(matInvAs, matRight);
-	deMat(matRight);
-#else /* SLICES == 1 */
-	Mat *matRight = multiply(matTransA, matL);
-	matT = multiply(matInvA, matRight);
-	deMat(matRight);
-#endif /* DIVIDE */
+    deMat(matRight);
+
+#endif /* DIVIDE_PARTS */
 
 #endif /* MASK */
 }
@@ -531,6 +486,7 @@ void newPreCal()
 
 
 /* After encryption, deconstruct those matrices */
+static
 void dePostCal()
 {
 
@@ -554,24 +510,22 @@ Mat *encrypto(
                 const Mat *key
             )
 #if MASK
-#if DIVIDE
+#if DIVIDE_PARTS != 1
 {
-#if DIM_A /* Using matrix A */
     setup();
-#endif
     newPreCal();
     /* Split to slices in vertical dimension */
 
-    Mat **keySlices = split(key, SLICES, 2);
-    Mat **plainSlices = split(plain, SLICES, 2);
+    Mat **keySlices = split(key, DIVIDE_PARTS, 2);
+    Mat **plainSlices = split(plain, DIVIDE_PARTS, 2);
 
-    Mat *cipherSlices[SLICES];
+    Mat *cipherSlices[DIVIDE_PARTS];
 
     /* Encoded Plain */
 	int indexOfSlices;
 	int theLast = MASKD - 1;
-	Mat **maskedPlain[SLICES] = { 0 };
-	for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+	Mat **maskedPlain[DIVIDE_PARTS] = { 0 };
+	for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 		maskedPlain[indexOfSlices] = encode(plainSlices[indexOfSlices]);
 		if (maskedPlain[indexOfSlices] == NULL) return NULL;
 		
@@ -586,7 +540,7 @@ Mat *encrypto(
 	Mat **matsTem = NULL;
     for (indexOfRound = 0; indexOfRound != ROUNDS; ++indexOfRound)
     {
-		for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+		for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 			/* S-box */
 			sboxes(maskedPlain[indexOfSlices], keyRoundSlices[indexOfSlices]);
 			/* L-box */
@@ -604,39 +558,41 @@ Mat *encrypto(
 		/* Split it */
 		int indexOfMask;
 		for (indexOfMask = 0; indexOfMask != MASKD; ++indexOfMask){
-			matsTem = split(matsMix[indexOfMask], SLICES, 2);
-			for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+			matsTem = split(matsMix[indexOfMask], DIVIDE_PARTS, 2);
+			for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 				maskedPlain[indexOfSlices][indexOfMask] = matsTem[indexOfSlices];
 			}			
 		}
         
 
 		/* Add Key And Round Constant */
-		for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+		for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 			Mat *roundKeySlice = add(rdConstSlices[indexOfRound][indexOfSlices], keySlices[indexOfSlices]);
 			Mat *matTem = maskedPlain[indexOfSlices][theLast];
 			maskedPlain[indexOfSlices][theLast] = add(roundKeySlice, matTem);
 			deMat(matTem);
 			deMat(roundKeySlice);
 		}
+        /*Mat *roundKeyL = add(rdCLeft[indexOfRound], keyLR[0]);
+        Mat *roundKeyR = add(rdCRight[indexOfRound], keyLR[1]);*/
     }
 
-	for (indexOfSlices = 0; indexOfSlices != SLICES; ++indexOfSlices){
+	for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
 		cipherSlices[indexOfSlices] = decode(maskedPlain[indexOfSlices]);
 	}
 
-	Mat *cipher = cat(cipherSlices, SLICES, 2);
+	Mat *cipher = cat(cipherSlices, DIVIDE_PARTS, 2);
 
     dePostCal();
     return cipher;
 }
 
-#else /* no dividing */
+#else /* DIVIDE_PARTS == 1 */
 {
     if (plain == NULL || key == NULL || ROUNDS < 0) return NULL;
     Mat  *matRoundKey,  *matTem;
 
-#if DIM_A /* Using matrix A */
+#if DIM_A /* DIM_A != 0 */
     setup();
 #endif
     newPreCal();
@@ -677,7 +633,7 @@ Mat *encrypto(
     return cipher;
 
 }
-#endif /* DIVIDE */
+#endif /* DIVIDE_PARTS != 1 */
 
 #else /* Unmask */
 /* Encryption begins */

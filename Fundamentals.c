@@ -392,8 +392,9 @@ Mat *graveA(
 #endif /* DIM_A != 0 */
 
 
-/* Tensor Product(Kronecker product) for two vectors, dim_row == 1 */
-/* Return a 1 x n^2 matrix */
+/* Tensor Product(kron) for two vectors */
+/* Considering 'matX->dim_col' is  '8' or '4', a row of the matrix will be no longer than a BYTE */
+/* Return a n x n^2 matrix */
 #if !TEST
 static
 #endif
@@ -404,20 +405,19 @@ Mat *tensorProduct(
 {
     if (matX == NULL || matY == NULL) return NULL;
     if ((matX->dim_row != matY->dim_row) ||
-        (matX->dim_col != matY->dim_col)  )return NULL;
-	if (matX->dim_row != 1)return NULL;
+        (matX->dim_col != matY->dim_col) ||
+	    (matX->dim_col > 8) )return NULL;
 
-   
-    Mat *matR = newMat(matX->dim_row, matX->dim_col * matY->dim_col, NULL, 0x00);
+    int i, j;
+    Mat *matR = newMat(matX->dim_row, matX->dim_col * matX->dim_col, NULL, 0x00);
     if (matR == NULL) return NULL;
 
 #if DIM_A == 4
-	int i, j;
     int bts = bytesOfRow(matR->dim_col);
-    for (i = 0; i != matX->dim_row; ++i) {
+    for (i = 0; i < matX->dim_row; ++i) {
         BYTE ident = IDENT;
 
-        for (j = 0; j != matX->dim_col ; j += 2){
+        for (j = 0; j < matX->dim_col ; j += 2){
             BYTE tem = 0x00;
             if (matX->vect[i] & ident){
                 tem ^= matY->vect[i];
@@ -427,27 +427,18 @@ Mat *tensorProduct(
                 tem ^= matY->vect[i] >> 4;
             }
             matR->vect[i * bts + j / 2] = tem;
-			ident = ident >> 1;
+            ident = ident >> 1;
 
-		}
-	}
+        }
+    }
 #else /* DIM_A == 8 or 0 */
-	int i, j;
-	BYTE pos = IDENT;
-	for (i = 0; i != matX->dim_col; ++i){
-		int btsOfRow = bytesOfRow(matX->dim_col);
-		int indexOfBt = i >> LENGTH;
-		pos >>= (i % LENGTH);		
-		if (matX->vect[indexOfBt] & pos) memmove(matR->vect + (i * btsOfRow), matY->vect, btsOfRow	);
-		else memset(matR->vect + (i * btsOfRow), 0, btsOfRow);
-		/*
-		int j;
-		for (j = 0; j != btsOfRow; ++j){
-			matR->vect[i * btsOfRow + j] = (matX->vect[indexOfBt] & pos) ? matY->vect[j] : 0x00;
-		}
-		*/
-	}
-
+    for (i = 0; i != matX->dim_row; ++i){
+        BYTE ident = IDENT;
+        for (j = 0; j < matX->dim_col; ++j){
+            matR->vect[i * matX->dim_col + j] = (matX->vect[i] & ident) ? matY->vect[i] : 0x00;
+            ident >>= 1;
+        }
+    }
 #endif /* DIM_A */
     return matR;
 }
@@ -620,7 +611,6 @@ Mat **encode(
     matTem = add(matSumOfRest, matPlain);
     /*  = (x^T) x inv(A) ^ T */
     matsRet[0] = multiply(matTem, matInvA);
-
     deMat(matTem);
 
 #else /* DIM_A == 0 */
@@ -1057,7 +1047,7 @@ Mat **split(
         subC = matOrig->dim_col;
         bytesOfSubMat = subR * bytesOfRow(matOrig->dim_col);
         ptrOfSubMat = matOrig->vect;
-        for (index = 0; index != n; ++index){
+        for (index = 0; index < n; ++index){
             retMats[index] = newMat(subR, subC, NULL, 0x00);
             if (retMats[index] == NULL) return NULL;
             memmove(retMats[index]->vect, ptrOfSubMat, bytesOfSubMat);
