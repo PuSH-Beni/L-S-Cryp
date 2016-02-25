@@ -1,87 +1,126 @@
 File Read Seccessfully
 
+## 64-bit
  ==>Mat X :
 b1 b2 b3 b4 b5 b6 b7 b8 
 
  ==>Mat Y  :
 a1 a2 a3 a4 a5 a6 a7 a8 
 
+## 128-bit
+ ==>Mat X :
+b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf 
+
+ ==>Mat Y  :
+a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af 
+
 CPU: Intel(R) Core(TM) i5-3470, 3.20GHz
+
+/**********************
+ *  Repeat 100 times
+ *********************/
 
 =======================
 Unmask:
-==> begins
-===> done
+
+64-bit:
 187ms
+
+128-bit:
+204ms
 
 =======================
 Masked:
 -----------------------	
 Without Matrix A:
 MASKD == 2:
-==> begins
-===> done
+64-bit:
 634ms
 
+128-bit:
+1358ms
+
 MASKD == 3:
-==> begins
-===> done
+64-bit:
 1178ms
 
+128-bit:
+2449ms
+
+
 MASKD == 4:
-==> begins
-===> done
+64-bit:
 2094ms
 
+128-bit:
+4415ms
+
 MASKD == 5:
-==> begins
-===> done
+64-bit:
 3355ms
+
+128-bit:
+7049ms
+
 
 ------------------------
 Matrix A (8-bit)
 MASKD == 2:
-==> begins
-===> done
+64-bit:
 928ms
 
+128-bit:
+1988ms
+
 MASKD == 3:
-==> begins
-===> done
+64-bit:
 1706ms
 
+128-bit:
+3630ms
+
 MASKD == 4:
-==> begins
-===> done
+64-bit:
 2745ms
 
-MASKD == 5:
-==> begins
-===> done
-4076ms
+128-bit:
+5645ms
 
+MASKD == 5:
+64-bit:
+4034ms
+
+128-bit:
+8588ms
 -----------------------
 Matrix A (4-bit)
 MASKD == 2:
-==> begins
-===> done
+64-bit:
 1604ms
 
+128-bit:
+3436ms
+
 MASKD == 3:
-==> begins
-===> done
+64-bit:
 2968ms
 
+128-bit:
+6068ms
+
 MASKD == 4:
-==> begins
-===> done
+64-bit:
 5193ms
 
+128-bit:
+9973ms
+
 MASKD == 5:
-==> begins
-===> done
+64-bit:
 7489ms
 
+128-bit:
+14446ms
 
 
 

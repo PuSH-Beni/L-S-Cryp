@@ -26,14 +26,18 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       4
+#define DIM_A       0
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
-#define MASKD       3
-#if DIM_A
-#define DIVIDE_PARTS (DIM_L / DIM_A)
+#define MASKD       2
+
+#if DIM_L == 16 && !DIM_A
+#define DIVIDE_SLICES 2
+#elif DIM_A
+#define DIVIDE_SLICES (DIM_L / DIM_A)
 #else
-#define DIVIDE_PARTS 1
+#define DIVIDE_SLICES 1
 #endif
+
 #endif /* MASK */
 
 #include <stdlib.h>
