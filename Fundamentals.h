@@ -27,8 +27,12 @@
 *  8:  the length of matrix A is 8-bit
 */
 #define DIM_A       8
+
+#define DIVIDE      1
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       2
+
+
 #if DIM_A
 #define DIVIDE_PARTS (DIM_L / DIM_A)
 #else
@@ -57,6 +61,7 @@
 #define LENG8  1
 
 #if LENG8
+#define BASE   BYTE
 #define LENGTH 8
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #define IDENT 0x80
@@ -67,6 +72,7 @@
 
 
 #elif LENG16
+#define BASE   WORD
 #define LENGTH 16
 #define IDENT  0x8000
 #define INDENT_MAT {0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 }
@@ -93,7 +99,7 @@ typedef unsigned long long  QWORD;
 /* Definations */
 typedef struct
 {
-	BYTE *vect;
+	BASE *vect;
 	int dim_row;
 	int dim_col;
 	char flags;	/* flags :
@@ -130,9 +136,9 @@ Mat *transpose(const Mat *matO);
 
 int bytesOfRow(int col);
 
-BYTE shiftBit(BYTE orig, int i,  int j);
+BASE shiftBit(BASE orig, int i,  int j);
 
-BYTE sumFromVect(BYTE Vect);
+BASE sumFromVect(BASE Vect);
 
 #if MASK
 
@@ -156,7 +162,7 @@ Mat *tensorProduct(	const Mat *matX, const Mat *matY);
 /*=========================================================*/
 
 /* Initialize a new Matrix instance */
-Mat *newMat(int dim_row,  int dim_col, BYTE *addr, BYTE flags);
+Mat *newMat(int dim_row,  int dim_col, BASE *addr, BASE flags);
 
 /* Deallocate a Matrix */
 void deMat(Mat *matrix);

@@ -69,7 +69,8 @@
 /*=========================================================*/
 /*   Functions      */
 /*=========================================================*/
-
+void enPreCal();
+void dePostCal();
 Mat *encrypto(const Mat *plain, const Mat *key);
 
 #endif /* Lbox_h */

@@ -37,7 +37,7 @@
 
 #define ENCRYPT_TEST					 1
 
-#define TIMES							 1
+#define TIMES							 100
 
 #if MASK
 #if DIM_A
@@ -100,7 +100,7 @@ int main(){
 	for (i = 0; i < DIM_L; ++i) {
 		int tem;
 		fscanf(fin, "%x ", &tem);
-		*(matX->vect + i) = (BYTE)tem;
+		*(matX->vect + i) = (BASE)tem;
 	}
 	/* Show it */
 	printf( "\n ==>Mat X :\n");
@@ -113,7 +113,7 @@ int main(){
 	for (i = 0; i < DIM_L; ++i) {
 		int tem;
 		fscanf(fin, "%x ", &tem);
-		*(matY->vect + i) = (BYTE)tem;
+		*(matY->vect + i) = (BASE)tem;
 	}
 	/* Show it */
 	printf( "\n ==>Mat Y  :\n");
@@ -126,7 +126,7 @@ int main(){
 #if TRANSPOSE_TEST
 	Mat *matTransX = transpose(matX);
 	bts = bytesOfRow(matTransX->dim_col);
-	BYTE *ptrOfTransX = matTransX->vect;
+	BASE *ptrOfTransX = matTransX->vect;
 	printf("\n ==>Transpose_RES:\n");
 	for (i = 0; i < matTransX->dim_row; ++i){
 		for (j = 0; j < bts; ++j){
@@ -144,7 +144,7 @@ int main(){
 	Mat *prod = multiply(matX, matY);
 	printf("\n ==>MULTI_RES:\n");
 	bts = bytesOfRow(prod->dim_col);
-	BYTE *ptrOfProd= prod->vect;
+	BASE *ptrOfProd= prod->vect;
 	for (i = 0; i < prod->dim_row; ++i){
 		for (j = 0; j < bts; ++j){
 			printf("%02x ", *ptrOfProd++);
@@ -158,7 +158,7 @@ int main(){
 	Mat **splitRes = split(matX, slices, 2);
 	Mat *catRes = cat(splitRes, slices, 2);
 	printf("\n ==>split_RES:\n");
-	BYTE *ptrOfMat;
+	BASE *ptrOfMat;
 	for (k = 0; k < slices; ++k){
 		ptrOfMat = splitRes[k]->vect;
 		bts = bytesOfRow(splitRes[k]->dim_col);
@@ -231,7 +231,7 @@ int main(){
 	printf("\n ==> tenserProd  :\n");
 
 	bts = bytesOfRow(tensorProd->dim_col);
-	BYTE *ptrOfTenserPd = tensorProd->vect;
+	BASE *ptrOfTenserPd = tensorProd->vect;
 	for (i = 0; i < tensorProd->dim_row; ++i){
 		for (j = 0; j < bts; ++j){
 			printf("%02x ", *ptrOfTenserPd);
@@ -246,9 +246,9 @@ int main(){
     /* MARK: SET_UP */
     
 	////A = inv(A) = trans(A) = E
-	//BYTE vecId1[] = IDENT_MAT;
-	//BYTE vecId2[] = IDENT_MAT;
-	//BYTE vecId3[] = IDENT_MAT;
+	//BASE vecId1[] = IDENT_MAT;
+	//BASE vecId2[] = IDENT_MAT;
+	//BASE vecId3[] = IDENT_MAT;
 	//Mat *matE1 = newMat(LENGTH, LENGTH, vecId1, 0x03);
 	//Mat *matE2 = newMat(LENGTH, LENGTH, vecId2, 0x03);
 	//Mat *matE3 = newMat(LENGTH, LENGTH, vecId3, 0x03);
@@ -284,7 +284,7 @@ int main(){
 
 	printf("\n ==> \\hat{A}  :\n");
     bts = bytesOfRow(matHat->dim_col);
-    BYTE *ptrOfHat = matHat->vect;
+    BASE *ptrOfHat = matHat->vect;
     for (i = 0; i < matHat->dim_row; ++i){
         for (j = 0; j < bts; ++j){
             printf("%02x ", *ptrOfHat);
@@ -297,7 +297,7 @@ int main(){
 	printf("\n");
 	printf("\n ==> \\grave{A}  :\n");
     bts = bytesOfRow(matGrave->dim_col);
-    BYTE *ptrOfGrave = matGrave->vect;
+    BASE *ptrOfGrave = matGrave->vect;
     for (i = 0; i < matGrave->dim_row; ++i){
         for (j = 0; j < bts; ++j){
             printf("%02x ", *ptrOfGrave);
@@ -308,7 +308,7 @@ int main(){
     printf("\n");
 	printf("\n ==> \\acute{A}  :\n");
     bts = bytesOfRow(matAcute->dim_col);
-    BYTE *ptrOfAcute = matAcute->vect;
+    BASE *ptrOfAcute = matAcute->vect;
     for (i = 0; i < matAcute->dim_row; ++i){
         for (j = 0; j < bts; ++j){
             printf("%02x ", *ptrOfAcute);
@@ -405,23 +405,28 @@ int main(){
 
 	Mat *cipher;
 	printf( "\n ==> begins\n");
-	//time_t starts, ends;
-	//time(&starts);
+#if DIM_A
+	setup();
+#endif
+	newPreCal();
 	double time_Start = (double)clock();
-	for (j = 0; j < TIMES; ++j){
+
+	for (j = 0; j != TIMES; ++j){
 		cipher = encrypto(matX, matY);
 
-		printf("==>LSout:\n");
-		for (i = 0; i < DIM_L; ++i) {
-			printf("%02x ", *(cipher->vect + i));
+		if (j < 2){
+			printf("==>LSout:\n");
+			for (i = 0; i < DIM_L; ++i) {
+				printf("%02x ", *(cipher->vect + i));
+			}
 		}
 		deMat(cipher);
-		//printf("===> the %d-th times finished\n", j);
+		
 	}
-	//time(&ends);
+
 	double time_End = (double)clock();
+	dePostCal();
 	printf("\n ===> done\n");
-	//double secs = difftime(ends, starts);
 	printf("%.fms\n", (time_End - time_Start));
 #endif
 
