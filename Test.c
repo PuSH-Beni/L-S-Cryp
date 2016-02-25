@@ -37,7 +37,7 @@
 
 #define ENCRYPT_TEST					 1
 
-#define TIMES							 100
+#define TIMES							 3
 
 #if MASK
 #if DIM_A
@@ -402,20 +402,26 @@ int main(){
 	fprintf(fout,  "\n ==> begins\n");
 	//time_t starts, ends;
 	//time(&starts);
+#if DIM_A
+	//setup();
+#endif
+	//newPreCal();
 	double time_Start = (double)clock();
 
 	for (j = 0; j < TIMES; ++j){
-		cipher = encrypto(matX, matY);
 
-		/*fprintf(fout, "==>LSout:\n");
+		cipher = encrypto(matX, matY);
+		
+		fprintf(fout, "==>LSout:\n");
 		for (i = 0; i < DIM_L; ++i) {
 			fprintf(fout, "%02x ", *(cipher->vect + i));
-		}*/
+		}
 		deMat(cipher);
 		
 	}
 	//time(&ends);
 	double time_End = (double)clock();
+	//dePostCal();
 	fprintf(fout, "\n ===> done\n");
 	//double secs = difftime(ends, starts);
 	fprintf(fout, "%.fms\n", (time_End - time_Start));

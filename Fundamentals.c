@@ -620,6 +620,7 @@ Mat **encode(
     matTem = add(matSumOfRest, matPlain);
     /*  = (x^T) x inv(A) ^ T */
     matsRet[0] = multiply(matTem, matInvA);
+
     deMat(matTem);
 
 #else /* DIM_A == 0 */

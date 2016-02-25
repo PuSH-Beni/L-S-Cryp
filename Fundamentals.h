@@ -26,17 +26,18 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       0
+#define DIM_A       8
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       2
 
-#if DIM_L == 16 && !DIM_A
-#define DIVIDE_SLICES 2
-#elif DIM_A
-#define DIVIDE_SLICES (DIM_L / DIM_A)
+#define DIVIDE		1
+
+#if DIM_A
+#define SLICES		(DIM_L / DIM_A)
 #else
-#define DIVIDE_SLICES 1
+#define SLICES      1
 #endif
+
 
 #endif /* MASK */
 
@@ -200,7 +201,6 @@ Mat *bitAnd(const Mat *matX, const Mat *matY);
 
 /* Simple add operation, as same as  XOR, i.e. '^' */
 Mat *add(const Mat *matX, const  Mat *matY);
-
 
 
 /* Catenate n mats through the r-dimension */
