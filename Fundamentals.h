@@ -16,7 +16,7 @@
 #define MASK        1
 
 /* DIM_L can be '16' or '8' */
-#define DIM_L	    16
+#define DIM_L	    8
 #define DIM_S		8
 #define ELEMS		(DIM_L * DIM_S)
 
@@ -26,11 +26,11 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       8
+#define DIM_A       4
 
-#define DIVIDE      1
+#define DIVIDE      0
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
-#define MASKD       2
+#define MASKD       5
 
 
 #if DIM_A
@@ -61,7 +61,6 @@
 #define LENG8  1
 
 #if LENG8
-#define BASE   BYTE
 #define LENGTH 8
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #define IDENT 0x80
@@ -69,15 +68,15 @@
 #define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 /* The length(bits) of S-box and L-box */
 /* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
-
+typedef unsigned char BASE;
 
 #elif LENG16
-#define BASE   WORD
+
 #define LENGTH 16
 #define IDENT  0x8000
 #define INDENT_MAT {0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 }
 #define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-
+typedef unsigned short BASE;
 #endif /* LENGTH */
 
 

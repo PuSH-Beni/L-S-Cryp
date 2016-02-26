@@ -414,13 +414,13 @@ int main(){
 	for (j = 0; j != TIMES; ++j){
 		cipher = encrypto(matX, matY);
 
-		if (j < 2){
+		/*if (j < 2){
 			printf("==>LSout:\n");
 			for (i = 0; i < DIM_L; ++i) {
 				printf("%02x ", *(cipher->vect + i));
 			}
 		}
-		deMat(cipher);
+		deMat(cipher);*/
 		
 	}
 
@@ -441,7 +441,7 @@ int main(){
 	/* MARK: Free the allocated mems and Deallocate all pointers */
 	/*=====================================================*/
 #if CONSTRUCT_MAT_TEST
-	deMat(matX);
+ 	deMat(matX);
 	deMat(matY);
 #endif
 

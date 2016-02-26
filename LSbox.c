@@ -23,12 +23,18 @@ static
 Mat **keyRoundSlices, **rdConstSlices[ROUNDS], **LSlices, *TSlices[DIVIDE_PARTS];
 #endif
 
-#if DIM_A != 0
+#if DIM_A
 extern
 Mat *matA, *matInvA, *matTransA;
+#if !DIVIDE && DIM_L == 16
+extern
+Mat *matAs, *matInvAs, *matTransAs;
+//Mat **keyRoundSlices;
+#endif
+
 static
 Mat *matT;
-#endif
+#endif /* DIM_A */
 
 #endif /* MASK */
 
@@ -87,19 +93,19 @@ Mat **sbox4b(
 
     product = bitAndWithMask(rvectWithMask[1], rvectWithMask[2]);
     imdWithMask[0] = addWithMask(product, rvectWithMask[0]);
-    deMats(product, MASKD);
+    //deMats(product, MASKD);
 
     product = bitAndWithMask(rvectWithMask[2], imdWithMask[0]);
     imdWithMask[1] = addWithMask(product, rvectWithMask[3]);
-    deMats(product, MASKD);
+    //deMats(product, MASKD);
 
     product = bitAndWithMask(rvectWithMask[1], imdWithMask[1]);
     imdWithMask[2] = addWithMask(product, rvectWithMask[2]);
-    deMats(product, MASKD);
+    //deMats(product, MASKD);
 
     product = bitAndWithMask(imdWithMask[1], imdWithMask[2]);
     imdWithMask[3] = addWithMask(product, rvectWithMask[1]);
-    deMats(product, MASKD);
+    //deMats(product, MASKD);
 
     /* Generate the correct order */
     /* d a b c */
@@ -298,8 +304,7 @@ void sboxes(
     
     
     /* Catenate those vectors to a matrix to return */
-    
-    
+        
     for (indexOfMask = 0; indexOfMask < MASKD; ++indexOfMask){
         rows[indexOfMask][0] = ptrOfL[indexOfMask];
         rows[indexOfMask][1] = ptrOfR[indexOfMask];
@@ -379,7 +384,7 @@ void newPreCal()
 
 {
 
-	key_r = newMat(DIM_S / 2, DIM_L, keyRV, 0x03);
+	
 
 	rdConst[0] = newMat(DIM_S, DIM_L, rdConst1V, 0x03);
 	rdConst[1] = newMat(DIM_S, DIM_L, rdConst2V, 0x03);
@@ -398,7 +403,7 @@ void newPreCal()
 	rdConst[13] = newMat(DIM_S, DIM_L, rdConst14V, 0x03);
 	rdConst[14] = newMat(DIM_S, DIM_L, rdConst15V, 0x03);
 	rdConst[15] = newMat(DIM_S, DIM_L, rdConst16V, 0x03);
-
+	key_r = newMat((DIM_S / 2), DIM_L, keyRV, 0x03);
 	matL = newMat(DIM_L, DIM_L, matLV, 0x03);
 
 
@@ -460,16 +465,23 @@ void newPreCal()
 	{
 		rdConstSlices[indexOfRounds] = split(rdConst[indexOfRounds], DIVIDE_PARTS, 2);
 	}
-	keyRoundSlices = split(key_r, DIVIDE_PARTS, 2);
+	
 
 	
 
-#elif DIM_A /* DIVIDE_PARTS == 1 && DIM_A != 0*/
+#elif DIM_A /* !DIVIDE && DIM_A */
     /* Get Matrix T  */
-    Mat *matRight = multiply(matTransA, matL);
-    matT = multiply(matInvA, matRight);
-
+#if DIM_L == 16
+    Mat *matRight = multiply(matTransAs, matL);
+    matT = multiply(matInvAs, matRight);
+	//keyRoundSlices = split(key_r, DIVIDE_PARTS, 2);
     deMat(matRight);
+#else
+	Mat *matRight = multiply(matTransA, matL);
+	matT = multiply(matInvA, matRight);
+
+	deMat(matRight);
+#endif
 
 #endif /* DIVIDE */
 
@@ -583,10 +595,6 @@ Mat *encrypto(
     if (plain == NULL || key == NULL || ROUNDS < 0) return NULL;
     Mat  *matRoundKey,  *matTem;
 
-#if DIM_A /* DIM_A != 0 */
-    //setup();
-#endif
-    //newPreCal();
     /* Encoded Plain */
     Mat **matsMasked = encode(plain);
     if (matsMasked == NULL) return NULL;
@@ -597,16 +605,11 @@ Mat *encrypto(
     deMat(matTem);
 
     int indexOfRound;
-    for (indexOfRound = 0; indexOfRound < ROUNDS; ++indexOfRound)
-    {
-        sboxes(matsMasked, key_r);
-		
-        lboxes(matsMasked);
-        
-        //Res res =refreshing(matsMasked);
-
-        matRoundKey = add(rdConst[indexOfRound], key);
-
+	for (indexOfRound = 0; indexOfRound < ROUNDS; ++indexOfRound)
+	{
+		sboxes(matsMasked, key_r);
+        lboxes(matsMasked);      
+		matRoundKey = add(rdConst[indexOfRound], key);
         /* Add Key And Round Constant */
         matTem = matsMasked[theLast];
         matsMasked[theLast] = add(matsMasked[theLast], matRoundKey);
@@ -618,8 +621,6 @@ Mat *encrypto(
 
     /* Decode Cipher */
     Mat *cipher = decode(matsMasked);
-
-    //dePostCal();
 
     return cipher;
 
