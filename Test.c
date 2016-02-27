@@ -18,12 +18,12 @@
 /*=========================================================*/
 /* MARK:  Toggle Of Test Options     */
 /*=========================================================*/
-#define RAND_TEST						 0
 #define CONSTRUCT_MAT_TEST				 1
 #define FILE_IO_TEST					 1
-#define TRANSPOSE_TEST					 1
-#define MULTIPLY_TEST					 1
-#define SPLIT_CAT_TEST					 1
+
+#define TRANSPOSE_TEST					 0
+#define MULTIPLY_TEST					 0
+#define SPLIT_CAT_TEST					 0
 
 #if MASK
 #define TENSOR_PRODUCT_TEST				 0
@@ -37,7 +37,7 @@
 
 #define ENCRYPT_TEST					 1
 
-#define TIMES							 100
+#define TIMES							 2
 
 #if MASK
 #if DIM_A
@@ -62,23 +62,6 @@ int main(){
 	/*=====================================================*/
 	/* =============    TEST BEGINS  =================== */
 	/*=====================================================*/
-#if RAND_TEST
-      
-    int origArray[] = { 0, 1, 2, 3, 4, 5, 6, 7};
-    for (i = 0; i < DIM_L; ++i) {
-        int j = rand() % LENGTH;
-        
-        int tem = origArray[j];
-        origArray[j] = origArray[i];
-        origArray[i] = tem;
-        
-    }
-    for (i = 0; i < DIM_L; ++i) {
-        printf("%d ",origArray[i]) ;
-    }
-    printf("\n");
-#endif
-    
     
 #if CONSTRUCT_MAT_TEST
 	Mat *matX = newMat(DIM_S, DIM_L, NULL, 0x00);
@@ -154,9 +137,9 @@ int main(){
 #endif
 
 #if SPLIT_CAT_TEST
-	int slices = 8;
-	Mat **splitRes = split(matX, slices, 2);
-	Mat *catRes = cat(splitRes, slices, 2);
+	int slices = 2;
+	Mat **splitRes = split(matX, slices, 1);
+	Mat *catRes = cat(splitRes, slices, 1);
 	printf("\n ==>split_RES:\n");
 	BASE *ptrOfMat;
 	for (k = 0; k < slices; ++k){
@@ -244,19 +227,6 @@ int main(){
 
 #if SET_UP_TEST
     /* MARK: SET_UP */
-    
-	////A = inv(A) = trans(A) = E
-	//BASE vecId1[] = IDENT_MAT;
-	//BASE vecId2[] = IDENT_MAT;
-	//BASE vecId3[] = IDENT_MAT;
-	//Mat *matE1 = newMat(LENGTH, LENGTH, vecId1, 0x03);
-	//Mat *matE2 = newMat(LENGTH, LENGTH, vecId2, 0x03);
-	//Mat *matE3 = newMat(LENGTH, LENGTH, vecId3, 0x03);
-
-	//matA = matE1;
-	//matInvA = matE2;
-	//matTransA = matE3;
-
 	setup();
 
 	printf("\n ==> A  :\n");
@@ -362,17 +332,6 @@ int main(){
 #endif
 #if BIT_AND_TEST
      /* MARK: BITAND */
-	/*
-	Mat **matsX[MASKD];
-	Mat **matsY[MASKD];
-	for (i = 0; i < MASKD; ++i){
-	matsX[i] = split(matEX[i], matX->dim_row, 1);
-	matsY[i] = split(matEY[i], matY->dim_row, 1);
-	}
-	Mat *matRowX[] = { matsX[0][0], matsX[0][1], matsX[0][2], matsX[0][3] };
-	Mat *matRowY[] = { matsY[0][0], matsY[0][1], matsY[0][2], matsY[0][3] };
-	*/
-
 	Mat **matEZ = bitAndWithMask(matEX, matEY);
 	for (i = 0; i < MASKD; ++i){
 		printf("\n ==> Encoded_Z [%d] :\n", i);
@@ -405,6 +364,7 @@ int main(){
 
 	Mat *cipher;
 	printf( "\n ==> begins\n");
+
 #if DIM_A
 	setup();
 #endif
@@ -414,13 +374,13 @@ int main(){
 	for (j = 0; j != TIMES; ++j){
 		cipher = encrypto(matX, matY);
 
-		/*if (j < 2){
-			printf("==>LSout:\n");
-			for (i = 0; i < DIM_L; ++i) {
+		if (j < 2){
+			printf("\n==>LSout:\n");
+			for (i = 0; i != DIM_L; ++i) {
 				printf("%02x ", *(cipher->vect + i));
 			}
 		}
-		deMat(cipher);*/
+		deMat(cipher);
 		
 	}
 

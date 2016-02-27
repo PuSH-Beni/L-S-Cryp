@@ -17,7 +17,6 @@ static
 Mat  *rdConst[ROUNDS],  *key_r, *matL;
 
 #if MASK
-
 #if DIVIDE
 static
 Mat **keyRoundSlices, **rdConstSlices[ROUNDS], **LSlices, *TSlices[DIVIDE_PARTS];
@@ -29,7 +28,6 @@ Mat *matA, *matInvA, *matTransA;
 #if !DIVIDE && DIM_L == 16
 extern
 Mat *matAs, *matInvAs, *matTransAs;
-//Mat **keyRoundSlices;
 #endif
 
 static
@@ -37,10 +35,11 @@ Mat *matT;
 #endif /* DIM_A */
 
 #endif /* MASK */
-
+/********************************************
+ *  static constants
+********************************************/
 BASE matLV[L_SIZE] = MAT_LV;
 BASE keyRV[KEY_SIZE] = KEY_RV;
-
 BASE rdConst1V[CONST_SIZE] = CONSTR1;
 BASE rdConst2V[CONST_SIZE] = CONSTR2;
 BASE rdConst3V[CONST_SIZE] = CONSTR3;
@@ -54,18 +53,20 @@ BASE rdConst9V[CONST_SIZE] = CONSTR9;
 BASE rdConst10V[CONST_SIZE] = CONSTR10;
 BASE rdConst11V[CONST_SIZE] = CONSTR11;
 BASE rdConst12V[CONST_SIZE] = CONSTR12;
+#if ROUNDS > 12
 BASE rdConst13V[CONST_SIZE] = CONSTR13;
 BASE rdConst14V[CONST_SIZE] = CONSTR14;
 BASE rdConst15V[CONST_SIZE] = CONSTR15;
 BASE rdConst16V[CONST_SIZE] = CONSTR16;
+#endif
+
 
 /*=========================================================*/
 /*   MARK: Private   Functions      */
 /*=========================================================*/
 
-
+/* 4-bit sbox */
 #if MASK
-/* A 4-bit sbox (masked)*/
 static
 Mat **sbox4b(
              const Mat **mats4b
@@ -93,19 +94,19 @@ Mat **sbox4b(
 
     product = bitAndWithMask(rvectWithMask[1], rvectWithMask[2]);
     imdWithMask[0] = addWithMask(product, rvectWithMask[0]);
-    //deMats(product, MASKD);
+    deMats(product, MASKD);
 
     product = bitAndWithMask(rvectWithMask[2], imdWithMask[0]);
     imdWithMask[1] = addWithMask(product, rvectWithMask[3]);
-    //deMats(product, MASKD);
+    deMats(product, MASKD);
 
     product = bitAndWithMask(rvectWithMask[1], imdWithMask[1]);
     imdWithMask[2] = addWithMask(product, rvectWithMask[2]);
-    //deMats(product, MASKD);
+    deMats(product, MASKD);
 
     product = bitAndWithMask(imdWithMask[1], imdWithMask[2]);
     imdWithMask[3] = addWithMask(product, rvectWithMask[1]);
-    //deMats(product, MASKD);
+    deMats(product, MASKD);
 
     /* Generate the correct order */
     /* d a b c */
@@ -189,8 +190,8 @@ Mat *sbox4b(
 #endif /* MASK */
 
 
-/* Using matT, matL */
-/* A Lboxes (masked) */
+
+/* Lbox */
 #if MASK
 #if DIVIDE
 static
@@ -227,7 +228,7 @@ void lboxes(
     deMat(matTem);
 
     int i;
-    for(i = 1; i < MASKD; ++i){
+    for(i = 1; i != MASKD; ++i){
         matTem = matsLin[i];
         matsLin[i] = multiply(matTem,matL);
         deMat(matTem);
@@ -247,7 +248,7 @@ Mat *lboxes(
 }
 #endif /* MASK */
 
-
+/* Sbox*/
 #if MASK
 /* DIM_S-bit S-box (masked)*/
 static
@@ -383,8 +384,10 @@ Mat *sboxes(
 void newPreCal()
 
 {
-
 	
+
+	key_r = newMat((DIM_S / 2), DIM_L, keyRV, 0x03);
+	matL = newMat(DIM_L, DIM_L, matLV, 0x03);
 
 	rdConst[0] = newMat(DIM_S, DIM_L, rdConst1V, 0x03);
 	rdConst[1] = newMat(DIM_S, DIM_L, rdConst2V, 0x03);
@@ -399,18 +402,16 @@ void newPreCal()
 	rdConst[9] = newMat(DIM_S, DIM_L, rdConst10V, 0x03);
 	rdConst[10] = newMat(DIM_S, DIM_L, rdConst11V, 0x03);
 	rdConst[11] = newMat(DIM_S, DIM_L, rdConst12V, 0x03);
+#if ROUNDS > 12
 	rdConst[12] = newMat(DIM_S, DIM_L, rdConst13V, 0x03);
 	rdConst[13] = newMat(DIM_S, DIM_L, rdConst14V, 0x03);
 	rdConst[14] = newMat(DIM_S, DIM_L, rdConst15V, 0x03);
 	rdConst[15] = newMat(DIM_S, DIM_L, rdConst16V, 0x03);
-	key_r = newMat((DIM_S / 2), DIM_L, keyRV, 0x03);
-	matL = newMat(DIM_L, DIM_L, matLV, 0x03);
-
+#endif
 
 #if MASK
 
 #if DIVIDE
-
 	LSlices = split(matL, DIVIDE_PARTS, 2);
 	/* Get Matrix T  */
 	/*  matDoubleInv looks like:
@@ -468,7 +469,6 @@ void newPreCal()
 	
 
 	
-
 #elif DIM_A /* !DIVIDE && DIM_A */
     /* Get Matrix T  */
 #if DIM_L == 16
@@ -516,8 +516,6 @@ Mat *encrypto(
 #if MASK
 #if DIVIDE
 {
-    //setup();
-    //newPreCal();
     /* Split to slices in vertical dimension */
 
     Mat **keySlices = split(key, DIVIDE_PARTS, 2);
@@ -610,7 +608,8 @@ Mat *encrypto(
 		sboxes(matsMasked, key_r);
         lboxes(matsMasked);      
 		matRoundKey = add(rdConst[indexOfRound], key);
-        /* Add Key And Round Constant */
+       
+		/* Add Key And Round Constant */
         matTem = matsMasked[theLast];
         matsMasked[theLast] = add(matsMasked[theLast], matRoundKey);
 
@@ -632,15 +631,13 @@ Mat *encrypto(
     if(plain == NULL || key == NULL || ROUNDS < 0) return NULL;
 
     Mat  *roundIn, *sum, *sout, *lout;	
-    //newPreCal();
 
     roundIn = add(plain, key);
     int round_i;
-    for(round_i = 0; round_i < ROUNDS; ++round_i)
+    for(round_i = 0; round_i != ROUNDS; ++round_i)
     {
         sout = sboxes(roundIn);
         lout = lboxes(sout);
-        
         deMat(roundIn);
         deMat(sout);
 
@@ -651,7 +648,6 @@ Mat *encrypto(
         deMat(sum);
     }
 
-    //dePostCal();
     return roundIn;
 }
 #endif /* MASK */

@@ -16,7 +16,7 @@
 #define MASK        1
 
 /* DIM_L can be '16' or '8' */
-#define DIM_L	    8
+#define DIM_L	    16
 #define DIM_S		8
 #define ELEMS		(DIM_L * DIM_S)
 
@@ -26,12 +26,12 @@
 *  4:  the length of matrix A is 4-bit
 *  8:  the length of matrix A is 8-bit
 */
-#define DIM_A       4
+#define DIM_A       8
 
 #define DIVIDE      0
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
-#define MASKD       5
-
+#define MASKD       2
+#define MASKD_SQURE MASKD * MASKD
 
 #if DIM_A
 #define DIVIDE_PARTS (DIM_L / DIM_A)
