@@ -37,7 +37,7 @@
 
 #define ENCRYPT_TEST					 1
 
-#define TIMES							 2
+#define TIMES							 100
 
 #if MASK
 #if DIM_A

@@ -40,9 +40,10 @@
 #endif
 #endif /* MASK */
 
+/*  INCLUDE HEAD FILES */
 #include <stdlib.h>
 #include <string.h>
-
+#include <nmmintrin.h>
 
 /* If the compiler supports C11, 'stdbool.h' and 'stdint.h' can be used */
 #if C11_SUPPORT
