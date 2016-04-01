@@ -9,6 +9,7 @@
 
 
 #include "LSbox.h"
+#include "bitAndNew.h"
 #include <stdio.h>
 
 /* <time.h> must be declared explicitly in C99 */
@@ -42,7 +43,7 @@
 #if MASK
 #if DIM_A
 extern
-Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
+Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute, **ICA, *matAs;
 #endif
 #endif
 /*=========================================================*/
@@ -137,7 +138,7 @@ int main(){
 #endif
 
 #if SPLIT_CAT_TEST
-	int slices = 2;
+	int slices = DIM_S;
 	Mat **splitRes = split(matX, slices, 1);
 	Mat *catRes = cat(splitRes, slices, 1);
 	printf("\n ==>split_RES:\n");
@@ -369,8 +370,8 @@ int main(){
 	setup();
 #endif
 	newPreCal();
+	
 	double time_Start = (double)clock();
-
 	for (j = 0; j != TIMES; ++j){
 		cipher = encrypto(matX, matY);
 
@@ -383,17 +384,11 @@ int main(){
 		deMat(cipher);
 		
 	}
-
 	double time_End = (double)clock();
 	dePostCal();
 	printf("\n ===> done\n");
 	printf("%.fms\n", (time_End - time_Start));
 #endif
-
-
-
-
-
 
 
 

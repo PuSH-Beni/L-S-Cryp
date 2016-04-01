@@ -31,7 +31,7 @@
 #define DIVIDE      0
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       2
-#define MASKD_SQURE MASKD * MASKD
+#define MASKD_SQUARE MASKD * MASKD
 
 #if DIM_A
 #define DIVIDE_PARTS (DIM_L / DIM_A)
