@@ -28,10 +28,11 @@
 */
 #define DIM_A       8
 
-#define DIVIDE      0
+
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       2
 #define MASKD_SQURE MASKD * MASKD
+#define DIVIDE      0
 
 #if DIM_A
 #define DIVIDE_PARTS (DIM_L / DIM_A)
@@ -125,35 +126,7 @@ typedef enum
 }Res;
 
 
-#if TEST
-/*=========================================================*/
-/*    Private Functions      */
-/*=========================================================*/
-int *randOrder( );
 
-Mat *transpose(const Mat *matO);
-
-int bytesOfRow(int col);
-
-BASE shiftBit(BASE orig, int i,  int j);
-
-BASE sumFromVect(BASE Vect);
-
-#if MASK
-
-Mat **genRandMat( );
-
-Mat *hatA( );
-
-Mat *graveA( );
-
-Mat *acuteA( );
-
-Mat *tensorProduct(	const Mat *matX, const Mat *matY);
-
-#endif /* MASK */
-
-#endif /* TEST */
 
 
 /*=========================================================*/
@@ -180,7 +153,7 @@ Mat *decode(Mat **matsSecret);
 Res refreshing(Mat **matsSecret);
 
 /* Pre-calculate some matrices  */
-void setup();
+void setupEn();
 
 /* secProduct */
 Mat **bitAndWithMask(const Mat **matEX, const Mat **matEY);

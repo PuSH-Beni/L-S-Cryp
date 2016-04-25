@@ -11,12 +11,14 @@
 
 
 /*=========================================================*/
-/*   MARK: Declarition     */
+/*   MARK: Declaration     */
 /*=========================================================*/
 #if DIM_A
 /* DIM_A == 4 or DIM_A == 8 */
+
 Mat *matA, *matInvA, *matTransA, *matHat, *matGrave, *matAcute;
 #if !DIVIDE
+
 Mat *matAs, *matInvAs, *matTransAs;
 #endif
 
@@ -27,10 +29,8 @@ Mat *matAs, *matInvAs, *matTransAs;
 /*=========================================================*/
 
 
-/* Caculate the num of bytes in one row */
-#if !TEST
+/* Calculate the # of bytes in one row */
 static
-#endif
 int bytesOfRow(
                int col
                )
@@ -51,9 +51,7 @@ int bytesOfRow(
 
 
 /* Shift bit form j -> i */
-#if !TEST
 static
-#endif
 BASE shiftBit(
               BASE orig,
               int i,
@@ -72,15 +70,13 @@ BASE shiftBit(
 
 
 /* Get sum of a byte */
-
-#if !TEST
-static 
-#endif
+/*
+static
 BASE sumOfByte(
                  BASE byte
                  )
 {
-/* Using the fast method to get the numbers of '1' in a byte */
+// Using the fast method to get the numbers of '1' in a byte
     BASE ret = 0;
     while (byte > 0){
         ret ^= IDENT;
@@ -89,44 +85,11 @@ BASE sumOfByte(
 
     return ret;
 }
+*/
 
 
-
-
-/* Generate random order */
-#if !TEST
+/* Transposition */
 static
-#endif
-int *randOrder(
-)
-{
-    /* Initialize random seed */
-    /* Just do this in the main() func */
-    //srand((WORD)time(NULL));
-
-    int *nums = (int *)malloc(LENGTH * sizeof(int));
-    if (nums == NULL)return NULL;
-    int i;
-
-    for (i = 0; i < LENGTH; ++i){
-        nums[i] = i;
-    }
-
-    for (i = 0; i < LENGTH; ++i){
-        int j = rand() % LENGTH;
-        int tem = nums[j];
-        nums[j] = nums[i];
-        nums[i] = tem;
-    }
-    return nums;
-}
-
-
-
-/* Transpositon */
-#if !TEST
-static
-#endif
 Mat *transpose(
                const Mat *matOrig
                )
@@ -177,9 +140,7 @@ Mat *transpose(
 
 /* Generate DIM_A x DIM_A random matrices A, inv(A), trans(A)  */
 #if DIM_A
-#if !TEST
 static
-#endif
 Mat **genRandMat(
 )
 {
@@ -196,15 +157,13 @@ Mat **genRandMat(
 
 
     /*  get matrix A and inv(A) temporarily */
-   // int *randRow = randOrder();
     int i;
     for (i = 0; i < DIM_A; ++i) matATem->vect[i] = matE->vect[i];
-    Mat *matInvATem = transpose(matATem);
-    Mat *matTransATem = transpose(matATem);
+    Mat *matInvATem = transpose((const Mat *)matATem);
+    Mat *matTransATem = transpose((const Mat *)matATem);
     deMat(matATem);
 
     /* get matrix P */
-    //srand((WORD)time(NULL));
     for (i = 0; i < DIM_A; ++i){
 
         BASE rowToAdd = (BASE)rand();
@@ -218,17 +177,17 @@ Mat **genRandMat(
 
         /* Tanspose(P) */
         matTem = matTransP;
-        matTransP = transpose(matE);
+        matTransP = transpose((const Mat *)matE);
         deMat(matTem);
 
         /*  A = P x A   ==>  A^T = A^T x P^T  */
         matTem = matTransATem;
-        matTransATem = multiply(matTransATem, matE);
+        matTransATem = multiply((const Mat *)matTransATem, (const Mat *)matE);
         deMat(matTem);
 
         /*  A^{-1} = A^{-1} x P     */
         matTem = matInvATem;
-        matInvATem = multiply(matInvATem, matTransP);
+        matInvATem = multiply((const Mat *)matInvATem, (const Mat *)matTransP);
         deMat(matTem);
 
         /* Refresh matE to Identity Matrix */
@@ -241,7 +200,6 @@ Mat **genRandMat(
 
 
     /* deallocate */
-    //free(randRow);
     deMat(matTransP);
     deMat(matE);
 
@@ -253,9 +211,7 @@ Mat **genRandMat(
 
 /* Generate hatA, graveA and acuteA */
 /* All of them are DIM_A x DIM_A^2 */
-#if !TEST
 static
-#endif
 Mat *hatA(
 )
 {
@@ -278,7 +234,7 @@ Mat *hatA(
     }
 
     /* get \hat{A} now */
-    Mat *matRet = multiply(matInvA, matRight);
+    Mat *matRet = multiply((const Mat *)matInvA, (const Mat *)matRight);
     deMat(matRight);
 
     return matRet;
@@ -286,9 +242,7 @@ Mat *hatA(
 
 
 
-#if !TEST
 static
-#endif
 Mat *acuteA(
 )
 {
@@ -317,7 +271,7 @@ Mat *acuteA(
     }
 
     /* get \grave{A} now */
-    Mat *matRet = multiply(matInvA, matRight);
+    Mat *matRet = multiply((const Mat *)matInvA, (const Mat *)matRight);
 
     deMat(matRight);
     deMat(matIdent);
@@ -326,9 +280,7 @@ Mat *acuteA(
 
 
 
-#if !TEST
 static
-#endif
 Mat *graveA(
 )
 {
@@ -358,7 +310,7 @@ Mat *graveA(
     }
 
     /* get \Acute{A} now */
-    Mat *matRet = multiply(matInvA, matRight);
+    Mat *matRet = multiply((const Mat *)matInvA, (const Mat *)matRight);
 
     deMat(matRight);
     deMat(matIdent);
@@ -370,9 +322,7 @@ Mat *graveA(
 
 /* Tensor Product(kron) for two vectors */
 /* Return a n x n^2 matrix */
-#if !TEST
 static
-#endif
 Mat *tensorProduct(
                    const Mat *matX,
                    const Mat *matY
@@ -416,34 +366,6 @@ Mat *tensorProduct(
 		}
 	}
 
-	
-	//int btsOfMat = matX->dim_row * bytesOfRow(matX->dim_col);
-	//int btsOfRowRet = bytesOfRow(matR->dim_col);
-	//int btsOfRowY = bytesOfRow(matY->dim_col);
- //   for (i = 0; i != matX->dim_row; ++i){
- //       BASE ident = IDENT;
-	//	int offsetOfRet = i * btsOfRowRet;
- //       for (j = 0; j != matY->dim_col; ++j){
-	//		int k;
-	//		for (k = 0; k != btsOfRowY; ++k){
-	//			matR->vect[offsetOfRet + j * btsOfRowY + k] = (matX->vect[i] & ident) ? matY->vect[k] : 0x00;
-	//		}
- //          
- //           ident >>= 1;
- //       }
- //   }
-
-	/*for (i = 0; i != matX->dim_row; ++i){
-		BYTE pos = IDENT;
-		for (j = 0; j != matX->dim_col; ++j){
-			int btsOfRow = bytesOfRow(matX->dim_col);
-			int indexOfBt = j >> LENGTH;
-			pos >>= (j % LENGTH);
-			if (matX->vect[indexOfBt] & pos) memmove(matR->vect + (j * btsOfRow), matY->vect, btsOfRow);
-			else memset(matR->vect + (j * btsOfRow), 0, btsOfRow);
-		}
-	}
-    */
 #endif /* DIM_A */
     return matR;
 }
@@ -552,7 +474,7 @@ void deMats(
 
 #if DIM_A
 /* Set-up */
-void setup(
+void setupEn(
 )
 {
     /* Get Matrix A, inv(A), trans(A) */
@@ -655,17 +577,17 @@ Mat **encode(
 #if DIM_L == 16 && !DIVIDE
 	matTem = add(matSumOfRest, matPlain);
 	/*  = (x^T) x inv(A) ^ T */
-	matsRet[0] = multiply(matTem, matInvAs);
+	matsRet[0] = multiply((const Mat *)matTem, (const Mat *)matInvAs);
 	deMat(matTem);
 #else
     matTem = add(matSumOfRest, matPlain);
     /*  = (x^T) x inv(A) ^ T */
-    matsRet[0] = multiply(matTem, matInvA);
+    matsRet[0] = multiply((const Mat *)matTem, (const Mat *)matInvA);
     deMat(matTem);
 #endif
 
 #else /* DIM_A == 0 */
-    matsRet[0] = add(matSumOfRest, matPlain);	
+    matsRet[0] = add((const Mat *)matSumOfRest, (const Mat *)matPlain);	
 #endif
 	if(MASKD > 2) deMat(matSumOfRest); 
 	free(randMat);
@@ -685,10 +607,10 @@ Mat *decode(
 #if DIM_A
 
 #if !DIVIDE && DIM_L == 16
-	Mat *matSum = multiply(matsSecret[0], matAs);
+	Mat *matSum = multiply((const Mat *)matsSecret[0], (const Mat *)matAs);
 	deMat(matsSecret[0]);
 #else
-    Mat *matSum = multiply(matsSecret[0], matA);
+    Mat *matSum = multiply((const Mat *)matsSecret[0], (const Mat *)matA);
     deMat(matsSecret[0]);
 #endif
 
@@ -697,82 +619,13 @@ Mat *decode(
 #endif
     for (i = 1; i < MASKD; ++i){
         matOrig = matSum;
-        matSum = add(matSum, matsSecret[i]);
+        matSum = add((const Mat *)matSum, (const Mat *)matsSecret[i]);
         deMat(matOrig);
         deMat(matsSecret[i]);
     }
 
     return matSum;
 }
-
-
-///* Refresh the old mask with a new mask */
-//Res refreshing(
-//               Mat **matsSecret
-//               )
-//{
-//    if (*matsSecret == NULL) return RES_INVALID_POINTER;
-//    Mat **matsRef = (Mat **)malloc(MASKD * sizeof(Mat *));
-//    if (matsRef == NULL) return RES_INVALID_POINTER;
-//
-//    int i, j;
-//    BASE *randMat = (BASE *)malloc((*matsSecret)->dim_row * sizeof(BASE));
-//    if (randMat == NULL) return RES_INVALID_POINTER;
-//
-//    /* a ZERO matrix */
-//    BASE zeroV[] = ZERO_MAT;
-//
-//    Mat *matSumOfRest = newMat((*matsSecret)->dim_row, (*matsSecret)->dim_col, zeroV, 0x03);
-//    if (matSumOfRest == NULL) return RES_INVALID_POINTER;
-//
-//    Mat *matTem = NULL;
-//
-//    for (i = 1; i < MASKD; ++i){
-//        matsRef[i] = newMat((*matsSecret)->dim_row, (*matsSecret)->dim_col, NULL, 0x00);
-//        if (matsRef[i] == NULL) return RES_INVALID_POINTER;
-//
-//        for (j = 0; j < (*matsSecret)->dim_row; ++j){
-//            randMat[j] = (BASE)rand();
-//#if DIM_A == 4
-//        randMat[j] &= 0xf0;
-//#endif
-//        }
-//        memmove(matsRef[i]->vect, randMat, (*matsSecret)->dim_row * sizeof(BASE));
-//
-//        matTem = matSumOfRest;
-//        matSumOfRest = add(matSumOfRest, matsRef[i]);
-//        deMat(matTem);
-//
-//        /*  Refreshing  */
-//        matTem = matsSecret[i];
-//        matsSecret[i] = add(matsRef[i], matTem);
-//        deMat(matTem);
-//    }
-//
-//    free(randMat);
-//
-//#if DIM_A
-//    matsRef[0] = multiply(matSumOfRest, matInvA);
-//    deMat(matSumOfRest);
-//
-//      /* Refresh the first one, x_1 */
-//    matTem = matsSecret[0];
-//    matsSecret[0] = add(matsRef[0], matTem);
-//    deMat(matTem);
-//
-//#else /* DIM_A == 0 */
-//      /* Refresh the first one, x_1 */
-//    matTem = matsSecret[0];
-//    matsSecret[0] = add(matSumOfRest, matTem);
-//    deMat(matTem);
-//    deMat(matSumOfRest);
-//#endif
-//
-//
-//    return RES_OK;
-//}
-
-
 
 
 /* Add operation, as same as XOR */
@@ -863,26 +716,26 @@ Mat **bitAndWithMask(
 				index = i * MASKD + j;
 #if DIM_A
 				if (i == 0 && j == 0){
-					matTem = tensorProduct(matEXPart[i], matEYPart[j]);
-					matTij[index] = multiply(matTem, matHat);
+					matTem = tensorProduct((const Mat *)matEXPart[i], (const Mat *)matEYPart[j]);
+					matTij[index] = multiply((const Mat *)matTem, (const Mat *)matHat);
 					deMat(matTem);
 				}
 				else if (i == 0){
-					matTem = tensorProduct(matEXPart[i], matEYPart[j]);
-					matTij[index] = multiply(matTem, matGrave);
+					matTem = tensorProduct((const Mat *)matEXPart[i], (const Mat *)matEYPart[j]);
+					matTij[index] = multiply((const Mat *)matTem, (const Mat *)matGrave);
 					deMat(matTem);
 				}
 				else if (j == 0){
-					matTem = tensorProduct(matEXPart[i], matEYPart[j]);
-					matTij[index] = multiply(matTem, matAcute);
+					matTem = tensorProduct((const Mat *)matEXPart[i], (const Mat *)matEYPart[j]);
+					matTij[index] = multiply((const Mat *)matTem, (const Mat *)matAcute);
 					deMat(matTem);
 				}
 				else {/*  i != 0 && j != 0  */
-					matTij[index] = bitAnd(matEXPart[i], matEYPart[j]);
+					matTij[index] = bitAnd((const Mat *)matEXPart[i], (const Mat *)matEYPart[j]);
 				}
 
 #else  /* DIM_A == 0 */
-				matTij[index] = bitAnd(matEXPart[i], matEYPart[j]);
+				matTij[index] = bitAnd((const Mat *)matEXPart[i], (const Mat *)matEYPart[j]);
 #endif /* DIM_A */
 			}
 		}
@@ -917,11 +770,11 @@ Mat **bitAndWithMask(
 				memmove(matR[index]->vect, randMat, btsOfMat * sizeof(BASE));
 
 				/* get R(j,i)  */
-				matTem = add(matR[index], matTij[index]);
+				matTem = add((const Mat *)matR[index], (const Mat *)matTij[index]);
 				deMat(matTij[index]);
 
 				index = j * MASKD + i;
-				matR[index] = add(matTij[index], matTem);
+				matR[index] = add((const Mat *)matTij[index], (const Mat *)matTem);
 
 				deMat(matTij[index]);
 				deMat(matTem);
@@ -930,7 +783,7 @@ Mat **bitAndWithMask(
 				if (i == 0){
 					index = j;
 					matTem = matR[index];
-					matR[index] = multiply(matTem, matA);
+					matR[index] = multiply((const Mat *)matTem, (const Mat *)matA);
 					deMat(matTem);
 				}
 #endif  /* DIM_A != 0 */
@@ -942,13 +795,12 @@ Mat **bitAndWithMask(
 			for (j = 1; j != MASKD; ++j){
 				index = j * MASKD + i;
 				matTem = matEZPart[i];
-				matEZPart[i] = add(matTem, matR[index]);
+				matEZPart[i] = add((const Mat *)matTem, (const Mat *)matR[index]);
 
 				deMat(matTem);
 				deMat(matR[index]);
 			}
 		}
-		__noop;
 		for (i = 0; i != MASKD; ++i){
 #if DIM_A == 8
 			matEZ[i]->vect[slicesIndex] = matEZPart[i]->vect[0];
@@ -1001,25 +853,25 @@ Mat **bitAndWithMask(
 #if DIM_A
 			if (i == 0 && j == 0){
 				matTem = tensorProduct(matEX[i], matEY[j]);
-				matTij[index] = multiply(matTem, matHat);
+				matTij[index] = multiply((const Mat *)matTem, (const Mat *)matHat);
 				deMat(matTem);
 			}
 			else if (i == 0){
 				matTem = tensorProduct(matEX[i], matEY[j]);
-				matTij[index] = multiply(matTem, matGrave);
+				matTij[index] = multiply((const Mat *)matTem, (const Mat *)matGrave);
 				deMat(matTem);
 			}
 			else if (j == 0){
 				matTem = tensorProduct(matEX[i], matEY[j]);
-				matTij[index] = multiply(matTem, matAcute);
+				matTij[index] = multiply((const Mat *)matTem, (const Mat *)matAcute);
 				deMat(matTem);
 			}
 			else {/*  i != 0 && j != 0  */
-				matTij[index] = bitAnd(matEX[i], matEY[j]);
+				matTij[index] = bitAnd((const Mat *)matEX[i], (const Mat *)matEY[j]);
 			}
 
 #else  /* DIM_A == 0 */
-			matTij[index] = bitAnd(matEX[i], matEY[j]);
+			matTij[index] = bitAnd((const Mat *)matEX[i], (const Mat *)matEY[j]);
 #endif /* DIM_A */
 		}
 	}
@@ -1095,52 +947,7 @@ Mat **bitAndWithMask(
 }
 #endif
 
-///* Matrix multiplication (Original) */
-//Mat *multiplyOriginal(
-//              const Mat *matX,
-//              const Mat *matY
-//              )
-//{
-//    if (matX == NULL || matY == NULL) return NULL;
-//    if (matX->dim_col != matY->dim_row) return NULL;
-//    if (matX->vect == NULL || matY->vect == NULL) return NULL;
-//
-//    /* Memory allocation */
-//    Mat *matRet = newMat(matX->dim_row, matY->dim_col, NULL, 0x00);
-//    if (matRet == NULL) return NULL;
-//
-//    /* Preparing a transposed matrix first */
-//    Mat *matYT = transpose(matY);
-//
-//    /* Multipling */
-//    int row, col;
-//    BASE *ptrOfMatRet, *ptrOfMatX, *ptrOfMatYT;
-//    for (row = 0; row < matX->dim_row; ++row){
-//        for (col = 0; col < matY->dim_col; ++col)
-//        {
-//            int bytesOfRX = bytesOfRow(matX->dim_col);
-//            int bytesOfRR = bytesOfRow(matY->dim_col);
-//
-//            int cntsVect = col / LENGTH;
-//            int offset = col % LENGTH;
-//            ptrOfMatRet = matRet->vect + row * bytesOfRR + cntsVect;
-//
-//            int i;
-//            BASE vectTem;
-//            for (i = 0; i < bytesOfRX; ++i){
-//                ptrOfMatX = matX->vect + row * bytesOfRX + i;
-//                ptrOfMatYT = matYT->vect + col * bytesOfRX + i;
-//                vectTem = (*ptrOfMatX) & (*ptrOfMatYT);
-//                vectTem = sumOfByte(vectTem);
-//                vectTem = vectTem >> offset;
-//                (*ptrOfMatRet) ^= vectTem;
-//            }
-//        }
-//    }
-//
-//    deMat(matYT);
-//    return matRet;
-//}
+
 
 #endif /* MASK */
 
@@ -1160,7 +967,7 @@ Mat *multiply(
   if (matRet == NULL) return NULL;
 
 
-  /* Multipling */
+  /* Multiplying */
   int row, col;
   BASE *ptrOfMatRet, *ptrOfMatX, *ptrOfMatY;
   for (row = 0; row < matX->dim_row; ++row){
@@ -1179,8 +986,10 @@ Mat *multiply(
         ptrOfMatX = matX->vect + row * bytesOfRX + i;
         ptrOfMatY = matY->vect + col * bytesOfRX + i;
 
-		vectTem = sumOfByte( (*ptrOfMatX) & (*ptrOfMatY) );
-        vectTem >>= offset;
+        vectTem = (BASE)__builtin_popcount( (*ptrOfMatX) & (*ptrOfMatY) );
+        vectTem <<= (LENGTH - 1 - offset);
+		//vectTem = sumOfByte( (*ptrOfMatX) & (*ptrOfMatY) );
+        //vectTem >>= offset;
         (*ptrOfMatRet) ^= vectTem;
       }
     }
@@ -1292,7 +1101,7 @@ Mat **split(
         bytesOfSubMat = subR * bytesOfRow(subC);
 
 		Mat *transOrig = transpose(matOrig);
-		Mat **transRes = split(transOrig, n, 1);
+		Mat **transRes = split((const Mat *)transOrig, n, 1);
 		deMat(transOrig);
 		for (index = 0; index < n; ++index){
 			retMats[index] = transpose(transRes[index]);
@@ -1341,7 +1150,7 @@ Mat *cat(
 			transMats[index] = transpose(mats[index]);
 		}
 
-		Mat *transRes = cat(transMats, n, 1);
+		Mat *transRes = cat((const Mat **)transMats, n, 1);
 		retMat = transpose(transRes);
 		deMat(transRes);
 		deMats(transMats, n);

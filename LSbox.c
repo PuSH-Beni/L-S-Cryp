@@ -9,16 +9,16 @@
 #include "LSbox.h"
 
 /*=========================================================*/
-/*   MARK: Declarition     */
+/*   MARK: Declaration     */
 /*=========================================================*/
 
 /* round_constant , key_round, matrix L*/
-static
+static 
 Mat  *rdConst[ROUNDS],  *key_r, *matL;
 
 #if MASK
 #if DIVIDE
-static
+static 
 Mat **keyRoundSlices, **rdConstSlices[ROUNDS], **LSlices, *TSlices[DIVIDE_PARTS];
 #endif
 
@@ -31,7 +31,7 @@ Mat *matAs, *matInvAs, *matTransAs;
 #endif
 
 static
-Mat *matT;
+Mat  *matT;
 #endif /* DIM_A */
 
 #endif /* MASK */
@@ -65,7 +65,7 @@ BASE rdConst16V[CONST_SIZE] = CONSTR16;
 /*   MARK: Private   Functions      */
 /*=========================================================*/
 
-/* 4-bit sbox */
+/* 4-bit SBOX */
 #if MASK
 static
 Mat **sbox4b(
@@ -92,20 +92,20 @@ Mat **sbox4b(
     // d = b x c + 1
     Mat **product;
 
-    product = bitAndWithMask(rvectWithMask[1], rvectWithMask[2]);
-    imdWithMask[0] = addWithMask(product, rvectWithMask[0]);
+    product = bitAndWithMask((const Mat **)rvectWithMask[1], (const Mat **)rvectWithMask[2]);
+    imdWithMask[0] = addWithMask((const Mat **)product, (const Mat **)rvectWithMask[0]);
     deMats(product, MASKD);
 
-    product = bitAndWithMask(rvectWithMask[2], imdWithMask[0]);
-    imdWithMask[1] = addWithMask(product, rvectWithMask[3]);
+    product = bitAndWithMask((const Mat **)rvectWithMask[2], (const Mat **)imdWithMask[0]);
+    imdWithMask[1] = addWithMask((const Mat **)product, (const Mat **)rvectWithMask[3]);
     deMats(product, MASKD);
 
-    product = bitAndWithMask(rvectWithMask[1], imdWithMask[1]);
-    imdWithMask[2] = addWithMask(product, rvectWithMask[2]);
+    product = bitAndWithMask((const Mat **)rvectWithMask[1], (const Mat **)imdWithMask[1]);
+    imdWithMask[2] = addWithMask((const Mat **)product, (const Mat **)rvectWithMask[2]);
     deMats(product, MASKD);
 
-    product = bitAndWithMask(imdWithMask[1], imdWithMask[2]);
-    imdWithMask[3] = addWithMask(product, rvectWithMask[1]);
+    product = bitAndWithMask((const Mat **)imdWithMask[1], (const Mat **)imdWithMask[2]);
+    imdWithMask[3] = addWithMask((const Mat **)product, (const Mat **)rvectWithMask[1]);
     deMats(product, MASKD);
 
     /* Generate the correct order */
@@ -119,7 +119,7 @@ Mat **sbox4b(
             deMat(matsTem[indexOfMask][i]);
             matsTem[indexOfMask][i] = ordered[i][indexOfMask];
         }
-        retMat[indexOfMask] = cat(matsTem[indexOfMask], 4, 1);
+        retMat[indexOfMask] = cat((const Mat **)matsTem[indexOfMask], 4, 1);
     }
 
 
@@ -134,7 +134,7 @@ Mat **sbox4b(
 }
 
 #else /* Unmask */
-/* A 4-bit sbox (unmask) */
+/* A 4-bit SBOX (unmask) */
 static
 Mat *sbox4b(
             const Mat *mat4b
@@ -153,20 +153,20 @@ Mat *sbox4b(
     Mat *imd[4];
     Mat *product;
     
-    product = bitAnd(rvect[1], rvect[2]);
-    imd[0] = add(product, rvect[0]);
+    product = bitAnd((const Mat *)rvect[1], (const Mat *)rvect[2]);
+    imd[0] = add((const Mat *)product, (const Mat *)rvect[0]);
     deMat(product);
     
-    product = bitAnd(rvect[2], imd[0]);
-    imd[1] = add(product, rvect[3]);
+    product = bitAnd((const Mat *)rvect[2], (const Mat *)imd[0]);
+    imd[1] = add((const Mat *)product, (const Mat *)rvect[3]);
     deMat(product);
     
-    product = bitAnd(rvect[1], imd[1]);
-    imd[2] = add(product, rvect[2]);
+    product = bitAnd((const Mat *)rvect[1], (const Mat *)imd[1]);
+    imd[2] = add((const Mat *)product, (const Mat *)rvect[2]);
     deMat(product);
     
-    product = bitAnd(imd[1], imd[2]);
-    imd[3] = add(product, rvect[1]);
+    product = bitAnd((const Mat *)imd[1], (const Mat *)imd[2]);
+    imd[3] = add((const Mat *)product, (const Mat *)rvect[1]);
     deMat(product);
 
 
@@ -175,7 +175,7 @@ Mat *sbox4b(
     Mat *ordered[] = {imd[3], imd[0], imd[1], imd[2]};
 
     Mat *retMat;
-    retMat =  cat(ordered, 4, 1);
+    retMat =  cat((const Mat**)ordered, 4, 1);
 
     /* Deallocate all  */
     int i;
@@ -191,7 +191,7 @@ Mat *sbox4b(
 
 
 
-/* Lbox */
+/* LBOX */
 #if MASK
 #if DIVIDE
 static
@@ -221,16 +221,16 @@ void lboxes(
     /* z[0] = T  *  x[0] */
     Mat *matTem = matsLin[0];
 #if DIM_A
-    matsLin[0] = multiply(matTem, matT);
+    matsLin[0] = multiply((const Mat *)matTem, (const Mat *)matT);
 #else /* DIM_A == 0 */
-    matsLin[0] = multiply(matTem, matL);
+    matsLin[0] = multiply((const Mat *)matTem, (const Mat *)matL);
 #endif
     deMat(matTem);
 
     int i;
     for(i = 1; i != MASKD; ++i){
         matTem = matsLin[i];
-        matsLin[i] = multiply(matTem,matL);
+        matsLin[i] = multiply((const Mat *)matTem, (const Mat *)matL);
         deMat(matTem);
     }
 }
@@ -243,12 +243,12 @@ Mat *lboxes(
             )
 {
     Mat *retMat;
-    retMat = multiply(lin, matL);
+    retMat = multiply(lin, (const Mat *)matL);
     return retMat;
 }
 #endif /* MASK */
 
-/* Sbox*/
+/* SBOX*/
 #if MASK
 /* DIM_S-bit S-box (masked)*/
 static
@@ -262,7 +262,7 @@ void sboxes(
     
     int indexOfMask;
     for (indexOfMask = 0; indexOfMask < MASKD; ++indexOfMask){
-        rows[indexOfMask] = split(matsSin[indexOfMask], 2, 1);
+        rows[indexOfMask] = split((const Mat *)matsSin[indexOfMask], 2, 1);
         
         /* Get the Left  and the Right parts */
         left[indexOfMask] = rows[indexOfMask][0];
@@ -282,16 +282,16 @@ void sboxes(
         /* Firstly, add key_r to the last masked component */
 
         matOlder = ptrOfL[theLast];
-        ptrOfL[theLast] = add(ptrOfL[theLast], keyRound);
+        ptrOfL[theLast] = add((const Mat *)ptrOfL[theLast], (const Mat *)keyRound);
         
         
         /* Secondly, through a 4-bit sbox */
-        fout4b = sbox4b(ptrOfL);
+        fout4b = sbox4b((const Mat **)ptrOfL);
         
         /* Then do 'XOR' with the right matrix */
         /* Get the NEXT LEFT part  */
         
-        sum = addWithMask(ptrOfR, fout4b);
+        sum = addWithMask((const Mat **)ptrOfR, (const Mat **)fout4b);
         
         deMats(fout4b, MASKD);
         deMats(ptrOfR, MASKD);
@@ -311,7 +311,7 @@ void sboxes(
         rows[indexOfMask][1] = ptrOfR[indexOfMask];
         
         deMat(matsSin[indexOfMask]);
-        matsSin[indexOfMask] = cat(rows[indexOfMask], 2, 1);
+        matsSin[indexOfMask] = cat((const Mat **)rows[indexOfMask], 2, 1);
 
         /* Deallocate all  */
         deMat(ptrOfL[indexOfMask]);
@@ -472,13 +472,13 @@ void newPreCal()
 #elif DIM_A /* !DIVIDE && DIM_A */
     /* Get Matrix T  */
 #if DIM_L == 16
-    Mat *matRight = multiply(matTransAs, matL);
-    matT = multiply(matInvAs, matRight);
+    Mat *matRight = multiply((const Mat *)matTransAs, (const Mat *)matL);
+    matT = multiply((const Mat *)matInvAs, (const Mat *)matRight);
 	//keyRoundSlices = split(key_r, DIVIDE_PARTS, 2);
     deMat(matRight);
 #else
-	Mat *matRight = multiply(matTransA, matL);
-	matT = multiply(matInvA, matRight);
+	Mat *matRight = multiply((const Mat *)matTransA, (const Mat *)matL);
+	matT = multiply((const Mat *)matInvA, (const Mat *)matRight);
 
 	deMat(matRight);
 #endif
@@ -494,11 +494,11 @@ void newPreCal()
 void dePostCal()
 {
 
-    deMat(key_r);
-	deMats(rdConst, ROUNDS);
+    deMat(( Mat *)key_r);
+	deMats((Mat **)rdConst, ROUNDS);
 #if MASK  &&  DIM_A
 /* USING A */
-    deMat(matT);
+    deMat((Mat *)matT);
 #endif
 
 }
@@ -514,6 +514,7 @@ Mat *encrypto(
                 const Mat *key
             )
 #if MASK
+
 #if DIVIDE
 {
     /* Split to slices in vertical dimension */
@@ -607,11 +608,11 @@ Mat *encrypto(
 	{
 		sboxes(matsMasked, key_r);
         lboxes(matsMasked);      
-		matRoundKey = add(rdConst[indexOfRound], key);
+		matRoundKey = add((const Mat *)rdConst[indexOfRound], (const Mat *)key);
        
 		/* Add Key And Round Constant */
         matTem = matsMasked[theLast];
-        matsMasked[theLast] = add(matsMasked[theLast], matRoundKey);
+        matsMasked[theLast] = add((const Mat *)matsMasked[theLast], (const Mat *)matRoundKey);
 
         deMat(matTem);
         deMat(matRoundKey);
@@ -625,6 +626,7 @@ Mat *encrypto(
 
 }
 #endif /* DIVIDE_PARTS */
+
 #else /* Unmask */
 /* Encryption begins */
 {

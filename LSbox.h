@@ -74,7 +74,7 @@
 /*=========================================================*/
 /*   Functions      */
 /*=========================================================*/
-void enPreCal();
+void newPreCal();
 void dePostCal();
 Mat *encrypto(const Mat *plain, const Mat *key);
 
