@@ -10,8 +10,8 @@
 
 #include "LSbox.h"
 #include <stdio.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
+
+//#include <util/delay.h>
 
 /* <time.h> must be declared explicitly in C99 */
 //#include <time.h>
@@ -20,9 +20,9 @@
 /*=========================================================*/
 /* MARK:  Toggle Of Test Options     */
 /*=========================================================*/
-#define CONSTRUCT_MAT_TEST				 1
+#define CONSTRUCT_MAT_TEST				 0
 #define FILE_IO_TEST					 0
-#define PIN_IO							 1
+#define PIN_IO							 0
 #define ENCRYPT_TEST					 1
 #define TIMES							 2
 
@@ -32,53 +32,105 @@ static volatile
 unsigned int totOverflows;
 
 #define uc unsigned char
+//#define F_CPU 16000000UL
 
-static
-const uc digits[]={0xc0,0xf9,0xa4,0xb0,0x99,0x92,0x82,0xf8,0x80,0x90};
-//uc digits[10]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
+//static
+//const uc digits[]={0xc0,0xf9,0xa4,0xb0,0x99,0x92,0x82,0xf8,0x80,0x90};
+uc tab[10]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F};
 
-static
-uc ledBuff[4] = {
-	0xFF, 0xFF, 0xFF, 0xFF
-};
 
-void delayus(int us)
+const int K = 577;
+
+#define SEG_PORT PORTD
+
+#define SEG4_ON   PORTG &= 0XFE;
+#define SEG4_OFF  PORTG |= 0X01;
+
+#define SEG3_ON   PORTG &= 0XFD;
+#define SEG3_OFF  PORTG |= 0X02;
+
+#define SEG2_ON   PORTG &= 0XF7;
+#define SEG2_OFF  PORTG |= 0X08;
+
+#define SEG1_ON   PORTG &= 0XEF;
+#define SEG1_OFF  PORTG |= 0X10;
+
+void delay_us(unsigned int microsecond)
 {
-	  int i;
-	  for( i=0;i<us;i++);
+	do
+	{
+		microsecond--;
+	}
+	while (microsecond>1);
 }
 
-void delayms(int ms)
+void delay_ms(unsigned int millisecond)
 {
-	while(ms--){
-		delayus(1000);
+	while (millisecond--)
+	{
+		delay_us(999);
 	}
 }
 
-void show(unsigned int toShow)
+void delay(void)
 {
-	DDRG |= 0x0F;
-	DDRD  = 0XFF;
-	
-	int ledIndex = 0;
-	ledBuff[0] = digits[toShow%10];
-	ledBuff[1] = digits[toShow/10%10];
-	ledBuff[2] = digits[toShow/100%10];
-	ledBuff[3] = digits[toShow/1000%10];
-	while(1){
-		delayms(1);
-		switch (ledIndex){
-			case 0: PORTG |= 0x01; PORTD=ledBuff[0]; break;
-			case 1: PORTG |= 0x02; PORTD=ledBuff[1]; break;
-			case 2: PORTG |= 0x03; PORTD=ledBuff[2]; break;
-			case 3: PORTG |= 0x04; PORTD=ledBuff[3]; break;
-			default:break;
-		}
-		++ledIndex;
-		if(ledIndex > 3) ledIndex = 0;
+	int i;
+	for(i=0;i<2000;i++){
+		delay_ms(1000);
 	}
-	
 }
+void port_init(void)
+{
+
+	PORTD = 0x00;
+	DDRD  = 0xFF;
+	
+	PORTG = 0x1B;
+	DDRG  = 0x1B;
+	
+	//DDRA = 0x00;
+	//DDRB = 0xFF;
+	//PORTB = 0x00;
+}
+
+void init_devices(void)
+{
+	//stop errant interrupts until set up
+	cli(); //disable all interrupts
+	XDIV  = 0x00; //xtal divider
+	XMCRA = 0x00; //external memory
+	port_init();
+
+	MCUCR = 0x00;
+	EICRA = 0x00; //extended ext ints
+	EICRB = 0x00; //extended ext ints
+	EIMSK = 0x00;
+	TIMSK = 0x00; //timer interrupt sources
+	sei(); //re-enable interrupts
+	//all peripherals are now initialized
+}
+
+void show(unsigned int n)
+{
+	SEG_PORT = tab[n/1000];
+	SEG1_ON;
+	delay_ms(K);
+	SEG1_OFF;
+	SEG_PORT = tab[(n%1000)/100];
+	SEG2_ON;
+	delay_ms(K);
+	SEG2_OFF;
+	SEG_PORT = tab[(n%100)/10];
+	SEG3_ON;
+	delay_ms(K);
+	SEG3_OFF;
+	SEG_PORT = tab[n%10];
+	SEG4_ON;
+	delay_ms(K);
+	SEG4_OFF;
+}
+
+
 
 /*=========================================================*/
 /* MARK: Main Function Begins    */
@@ -89,7 +141,7 @@ int main(){
 	/*=====================================================*/
 	/* =============    TEST BEGINS  =================== */
 	/*=====================================================*/
-	
+	init_devices();
 	#if CONSTRUCT_MAT_TEST
 	Mat *matX = newMat(DIM_S, DIM_L, NULL, 0x00);
 	Mat *matY = newMat(DIM_S, DIM_L, NULL, 0x00);
@@ -139,8 +191,7 @@ int main(){
 	#endif
 
 	#if PIN_IO
-	DDRA = 0x00;
-	DDRB = 0xFF;
+	
 	int IOIndex;
 	for (IOIndex = 0; IOIndex < DIM_L; ++IOIndex) {
 		*(matX->vect + IOIndex) = (BASE)0x1b;
@@ -166,46 +217,56 @@ int main(){
 	Mat *cipher;
 	//printf( "\n ---> Encrytion: \n");
 
-	#if DIM_A
-	setupEn();
-	#endif
-	newPreCal();
+	//#if DIM_A
+	//setupEn();
+	//#endif
+	//newPreCal();
 
-	int repeatIndex;
+	//int repeatIndex;
 	//double time_Start = (double)clock();
 
-	
-	// Pre-scaler = FCPU/8(0b010) , 64(0b011), 256(0b100), 1024(0b101)
-	TCCR1B |= (1<<CS11)|(0<<CS10);
-	//Enable Overflow Interrupt Enable
-	TIMSK |=(1<<TOIE1);
-	//Enable Global Interrupts
-	sei();
-	totOverflows = 0;
-	TCNT1 = 0;
-	show(0x0001);
-	
-	for (repeatIndex = 0; repeatIndex != TIMES; ++repeatIndex){
+	while (1)
+	{
+		// Pre-scaler = FCPU/8(0b010) , 64(0b011), 256(0b100), 1024(0b101)
+		//TCCR1B |= (1<<CS11)|(0<<CS10);
+		//Enable Overflow Interrupt Enable
+		//TIMSK |=(1<<TOIE1);
+		//Enable Global Interrupts
+		//totOverflows = 0;
+		//TCNT1 = 0;
+		
+		show(1234);
+		
+		int m;
+		for(m = 0; m < 2000; ++m){
+			show(1234);
+			delay_ms(1000);
+		}
+		for(m = 0; m < 2000; ++m){
+			show(5678);
+			delay_ms(1000);
+		}
+		/*for (repeatIndex = 0; repeatIndex != TIMES; ++repeatIndex){
 		cipher = encrypto(matX, matY);
 
 		//if (repeatIndex < 2){
-			////printf("\n==>LSout:\n");
-			//int byteIndex;
-			//for (byteIndex = 0; byteIndex < DIM_L; ++byteIndex) {
-				//PORTB =  *(cipher->vect + byteIndex);
-			//}
+		////printf("\n==>LSout:\n");
+		//int byteIndex;
+		//for (byteIndex = 0; byteIndex < DIM_L; ++byteIndex) {
+		//PORTB =  *(cipher->vect + byteIndex);
+		//}
 		//}
 		//deMat(cipher);
 		
+		}*/
+		
+		//unsigned int timeCost = TCNT1 * PERIOD_TIME;
+		//show(5678);
 	}
 	
-	unsigned int timeCost = TCNT1 * PERIOD_TIME;
-	show(timeCost);
-	
 	//double time_End = (double)clock();
-	dePostCal();
+	//dePostCal();
 	//printf("\n ---> Time Cost: \n");
-
 	//printf("%.fms\n", (time_End - time_Start));
 	#endif
 
@@ -213,14 +274,13 @@ int main(){
 	/*=====================================================*/
 	/* MARK: Free the allocated memories */
 	/*=====================================================*/
-	#if CONSTRUCT_MAT_TEST
-	deMat(matX);
-	deMat(matY);
-	#endif
-
+	//#if CONSTRUCT_MAT_TEST
+	//deMat(matX);
+	//deMat(matY);
+	//#endif
 	return 0;
 }
-ISR (TIMER0_OVF_vect)  // timer0 overflow interrupt
-{
-	++totOverflows;
-}
+//ISR (TIMER0_OVF_vect)  // timer0 overflow interrupt
+//{
+//++totOverflows;
+//}
