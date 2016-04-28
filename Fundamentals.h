@@ -22,10 +22,12 @@
 
 #if MASK
 /* Tree values of DIM_A
-*  0:  masked without matrix A
-*  4:  the length of matrix A is 4-bit
-*  8:  the length of matrix A is 8-bit
-*/
+ *  0:  masked without matrix A
+ *  4:  the length of matrix A is 4-bit
+ *  8:  the length of matrix A is 8-bit
+ *
+ */
+
 #define DIM_A       8
 
 
@@ -58,18 +60,16 @@
 
 
 /* Use BYTE or WORD */
-#define LENG16 0
 #define LENG8  1
 
 #if LENG8
 #define LENGTH 8
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
-#define IDENT 0x80
-#define IDENT_MAT {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
-#define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define UNIT_BYTE 0x80
+#define UNIT_MAT {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
+#define ZERO_MAT  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 /* The length(bits) of S-box and L-box */
 /* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
-typedef unsigned char BASE;
 
 #elif LENG16
 
@@ -79,7 +79,6 @@ typedef unsigned char BASE;
 #define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 typedef unsigned short BASE;
 #endif /* LENGTH */
-
 
 
 #if C11_SUPPORT
@@ -96,32 +95,14 @@ typedef unsigned long long  QWORD;
 
 
 
-/* Definations */
-typedef struct
-{
-	BASE *vect;
-	int dim_row;
-	int dim_col;
-	char flags;	/* flags :
-				   '0x00': normal
-				   '0x01': unit matrix or identity matrix
-				   '0x02': error
-				   '0x03': 'vect' points to an existing array
-				*/
-}Mat;
-
-
-
 /* Error types */
 typedef enum
 {
 	RES_OK = 0,
 	RES_INVALID_DIMENSION,
-	RES_ALLOCATION_FAILED,
 	RES_INVALID_POINTER,
 	RES_INVALID_VECT,
-	RES_INVALID_SPLIT,
-	RES_INVALID_CAT
+	RES_NON_MATA
 
 }Res;
 
@@ -133,56 +114,36 @@ typedef enum
 /*   Functions      */
 /*=========================================================*/
 
-/* Initialize a new Matrix instance */
-Mat *newMat(int dim_row,  int dim_col, BASE *addr, BASE flags);
-
-/* Deallocate a Matrix */
-void deMat(Mat *matrix);
-
-/* Deconstruct MASKD Mat instances */
-void deMats(Mat **matrices, int cnt);
-
+int bytesOfRow(int col);
 #if MASK
 /* Encode(Mask) the plain text */
-Mat **encode(const Mat *matPlain);
+Res encode(BYTE *matMasked, const BYTE *matPlain);
 
 /* Decode(Unmask) the Secret text */
-Mat *decode(Mat **matsSecret);
-
-/* Refresh the old mask with a new mask */
-Res refreshing(Mat **matsSecret);
+Res decode(BYTE *matUnmask, const BYTE *matsSecret);
 
 /* Pre-calculate some matrices  */
-void setupEn();
+Res setupEnc();
 
 /* secProduct */
-Mat **bitAndWithMask(const Mat **matEX, const Mat **matEY);
+Res bitAndWithMask(BYTE *bitAndRes, const BYTE *matEX, const BYTE *matEY, const int *dims);
 
 /* secAdd  */
-Mat **addWithMask(const Mat **matEX, const  Mat **matEY);
+Res addWithMask(BYTE *addRes, const BYTE *matEX, const  BYTE *matEY, const int *dims);
 
 #endif /* MASK */
 
 
-/* Multiplication between two matrices */
-/*  If MASK == '1'( masked ), multiply(X, Y) equals:   matX x matY  */
-/*       Otherwise( unmask ), multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
-Mat *multiply(const Mat *matX, const Mat *matY);
+/* Multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
+Res multiply(BYTE *multiRes, const BYTE *matX, const BYTE *matY, const int *dims);
 
 /* Simple bitand operation, as same as AND, i.e.'&' */
-Mat *bitAnd(const Mat *matX, const Mat *matY);
+Res bitAnd(BYTE *bitAndRes, const BYTE *matX, const BYTE *matY, const int *dims);
 
 /* Simple add operation, as same as  XOR, i.e. '^' */
-Mat *add(const Mat *matX, const  Mat *matY);
+Res add(BYTE *addRes, const BYTE *matX, const  BYTE *matY, const int *dims);
 
-
-
-/* Catenate n mats through the r-dimension */
-Mat *cat(const Mat **mats,  int n,  int r);
-
-/* Split a matrix to n parts through the r-dimension */
-Mat **split (const Mat *matO,  int n,  int r);
-
+Res transpose(BYTE *transRes, const BYTE *matOrig, const int *dims);
 
 
 #endif /* Fundamentals_h */
