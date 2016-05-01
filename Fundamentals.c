@@ -9,7 +9,6 @@
 
 #include "Fundamentals.h"
 
-
 /*=========================================================*/
 /*   MARK: Declaration     */
 /*=========================================================*/
@@ -19,7 +18,7 @@ static
 BYTE matHat[DIM_A * DIM_A] = { 0 }, matGrave[DIM_A * DIM_A] = { 0 }, matAcute[DIM_A * DIM_A] = { 0 };
 
 BYTE matA[DIM_A] = { 0 }, matInvA[DIM_A] = { 0 }, matTransA[DIM_A] = { 0 };
-BYTE matAs[DIM_L * 2] = { 0 }, matInvAs[DIM_L * 2] = { 0 }, matTransAs[DIM_L * 2] = { 0 };
+BYTE matAs[L_SIZE] = { 0 }, matInvAs[L_SIZE] = { 0 }, matTransAs[L_SIZE] = { 0 };
 #endif
 
 
@@ -108,7 +107,7 @@ const int *dims
 
 	bytesOfRowOrig = bytesOfRow(dims[1]);
 	bytesOfRowRet = bytesOfRow(dims[0]);
-
+	memset(transRes, 0, dims[0] * bytesOfRowOrig);
 	if (matOrig == NULL || transRes == NULL) return RES_INVALID_POINTER;
 	/* Transposing */
 	for (colOrig = 0; colOrig < dims[1]; ++colOrig){
@@ -132,14 +131,6 @@ const int *dims
 
 
 
-
-
-/* ============================================================== */
-/*      MARK: Functions For Masked Model                  */
-/* ============================================================== */
-#if MASK
-
-
 /* Generate DIM_A x DIM_A random matrices A, inv(A), trans(A)  */
 #if DIM_A
 static
@@ -154,10 +145,8 @@ Res genRandMat(
 	BYTE tem[DIM_A] = { 0 };
 
 	/*  get matrix A and inv(A) temporarily */
-	//res = transpose(matInvA, (const BYTE *)matE, dimsE);
-	//if (res) return res;
-	memcpy(matTransA, (const BYTE *)matE, DIM_A * sizeof(BYTE));
-	memcpy(matInvA, (const BYTE *)matE, DIM_A * sizeof(BYTE));
+	memcpy((BYTE *)matTransA, (const BYTE *)matE, DIM_A * sizeof(BYTE));
+	memcpy((BYTE *)matInvA, (const BYTE *)matE, DIM_A * sizeof(BYTE));
 
 	/* get matrix P */
 
@@ -177,16 +166,16 @@ Res genRandMat(
 		/* Tanspose(P) */
 		
 		res = transpose(matP, (const BYTE *)matE, dimsE);
-
+		CHECK(res);
 		/*  A = P x A   ==>  A^T = A^T x P^T  */
 		
-		memcpy(tem, (const BYTE *)matTransA, DIM_A * sizeof(BYTE));
+		memcpy((BYTE *)tem, (const BYTE *)matTransA, DIM_A * sizeof(BYTE));
 		res = multiply(matTransA, (const BYTE *)tem, (const BYTE *)matE, dimsE);
-
+		CHECK(res);
 		/*  A^{-1} = A^{-1} x P     */
-		memcpy(tem, (const BYTE *)matInvA, DIM_A * sizeof(BYTE));
+		memcpy((BYTE *)tem, (const BYTE *)matInvA, DIM_A * sizeof(BYTE));
 		res = multiply(matInvA, (const BYTE *)tem, (const BYTE *)matP, dimsE);
-
+		CHECK(res);
 		/* Refresh matE to Unit Matrix */
 		matE[i] ^= rowToAdd;
 	}
@@ -205,15 +194,15 @@ Res hatA(
 )
 {
 	int i, j;
-	Res res;
+	Res res = RES_OK;
 	BYTE *ptrOfMatATi;
 	BYTE *ptrOfMatATj, *ptrOfMatR;
 	const int dimsH[4] = { DIM_A, DIM_A, DIM_A * DIM_A, DIM_A };
+
 	if (matTransA == NULL || matInvA == NULL) return RES_NON_MATA;
 	//row: DIM_A^2, col: DIM_A
-	BYTE matRight[DIM_A * DIM_A] = { 0 };
+	BYTE matRight[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
 	/* get transposition of the right matrix: (E' x (A tp B))^T */
-
 	for (i = 0; i < DIM_A; ++i){
 		ptrOfMatATi = matTransA + i;
 		for (j = 0; j < DIM_A; ++j){
@@ -223,8 +212,7 @@ Res hatA(
 		}
 	}
 
-	/* get \hat{A} now */
-	
+	/* get \hat{A} now */	
 	res = multiply(matHat, (const BYTE *)matInvA, (const BYTE *)matRight, dimsH);
 	return res;
 }
@@ -236,10 +224,10 @@ Res acuteA(
 )
 {
 	int i, j;
-	Res res;
-	BYTE matRight[DIM_A * DIM_A] = { 0 };
+	Res res = RES_OK;
+	BYTE matRight[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
 	BYTE *ptrOfMatATj, *ptrOfMatR, *ptrOfMatI;
-	BYTE matE[DIM_A] = UNIT_MAT;
+	BYTE matE[DIM_A * DIM_A / LENGTH] = UNIT_MAT;
 	const int dimsH[4] = { DIM_A, DIM_A, DIM_A * DIM_A, DIM_A };
 	if (matTransA == NULL || matInvA == NULL) return RES_NON_MATA;
 
@@ -254,8 +242,7 @@ Res acuteA(
 	}
 
 	/* get \grave{A} now */
-	
-	res = multiply(matHat, (const BYTE *)matInvA, (const BYTE *)matRight, dimsH);
+	res = multiply(matAcute, (const BYTE *)matInvA, (const BYTE *)matRight, dimsH);
 	return res;
 }
 
@@ -266,11 +253,11 @@ Res graveA(
 )
 {
 	int i, j;
-	Res res;
+	Res res = RES_OK;
 	BYTE *ptrOfMatATi, *ptrOfMatR, *ptrOfMatI;
-	BYTE matE[DIM_A] = UNIT_MAT;
+	BYTE matE[DIM_A * DIM_A / LENGTH] = UNIT_MAT;
 
-	BYTE matRight[DIM_A * DIM_A] = { 0 };
+	BYTE matRight[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
 	const int dimsH[4] = { DIM_A, DIM_A, DIM_A * DIM_A, DIM_A };
 	if (matTransA == NULL || matInvA == NULL) return RES_NON_MATA;
 	/* get transposition of the right matrix: (E' x (A tp E))^T */
@@ -283,25 +270,24 @@ Res graveA(
 		}
 	}
 
-	/* get \Acute{A} now */
-	
-	res = multiply(matHat, (const BYTE *)matInvA, (const BYTE *)matRight, dimsH);
+	/* get \Acute{A} now */	
+	res = multiply(matGrave, (const BYTE *)matInvA, (const BYTE *)matRight, dimsH);
 	return res;
 }
 
 #endif /* DIM_A != 0 */
 
 
-/* Tensor Product(kron) for two vectors */
-/* Return a n x n^2 matrix
-* row: X_ROW, col: X_COL^2;  BYTE[DIM_S*X_ROW]
-*/
+/* Tensor Product(kron) for two vectors 
+ * Return a n x n^2 matrix
+ * row: 1, col: X_COL^2;  BYTE[DIM_S*X_ROW]
+ */
 static
 Res tensorProduct(
 BYTE *tensProdRes,
 const BYTE *matX,
 const BYTE *matY,
-const int *dims
+const int *dims // {1, DIM_A}
 )
 {
 	int i, j;
@@ -311,6 +297,7 @@ const int *dims
 	(dims[1] != dims[3]) ||
 	(dims[1] > 8))return RES_INVALID_DIMENSION;
 
+	memset(tensProdRes, 0, dims[0] * bytesOfRow(dims[1]));
 
 	#if DIM_A == 4
 	int bts = bytesOfRow(X_COL * X_COL);
@@ -334,31 +321,23 @@ const int *dims
 	#else /* DIM_A == 8 or 0 */
 
 	for (i = 0; i != dims[0]; ++i){
-		BYTE ident = UNIT_BYTE;
+		BYTE unit = UNIT_BYTE;
 		for (j = 0; j != dims[3]; ++j){
-			tensProdRes[i * dims[1] + j] = (matX[i] & ident) ? matY[i] : 0x00;
-			ident >>= 1;
+			tensProdRes[i * dims[1] + j] = (matX[i] & unit) ? matY[i] : 0x00;
+			unit >>= 1;
 		}
 	}
 
-	#endif /* DIM_A */
+	#endif /* DIM_A == 4 */
 	return RES_OK;
 }
 
-#endif /* MASK */
 
 
 /*=========================================================*/
 /*   MARK: Public   Functions      */
 /*=========================================================*/
-
-
-/* ============================================================== */
-/*      Functions For Masked Model                  */
-/* ============================================================== */
-
 #if MASK
-
 #if DIM_A
 /* Set-up */
 Res setupEnc(
@@ -371,10 +350,14 @@ Res setupEnc(
 
 
 	res = genRandMat();
+	CHECK(res);
 	/* Get Matrix \hat{A}, \grave{A}, \acute{A} */
 	res = hatA();
+	CHECK(res);
 	res = graveA();
+	CHECK(res);
 	res = acuteA();
+	CHECK(res);
 
 	#if !DIVIDE
 	/*| inv(A), 0 |
@@ -415,7 +398,7 @@ Res setupEnc(
 	return res;
 }
 
-#endif /* DIM_A != 0 */
+#endif /* DIM_A */
 
 /* Encode(Mask) the plain text */
 Res encode(
@@ -430,26 +413,26 @@ const BYTE *matPlain
 	BYTE matSumOfRest[DIM_L] = { 0 };
 	BYTE tem[DIM_L] = { 0 };
 	const int dimsM[4] = { DIM_S, DIM_L, DIM_L, DIM_L };
+	const int dimsAdd[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
 
 	if (matPlain == NULL || matMasked == NULL) return RES_INVALID_POINTER;
 	btsOfMat = DIM_S *  bytesOfRow(DIM_L);
+	memset(matMasked, 0, btsOfMat * MASKD);
 
 	for (i = 1; i < MASKD; ++i){
 		for (j = 0; j < btsOfMat; ++j){
 			randMat[j] = (BYTE)rand();
-			#if DIM_L == 4
-			randMat[j] &= 0xf0;
-			#endif
 		}
 		if (matMasked + i * btsOfMat == NULL) return RES_INVALID_POINTER;
 		memcpy(matMasked + i * btsOfMat, (const BYTE *)randMat, btsOfMat * sizeof(BYTE));
 
 		if (i == 1){
-			memcpy(matSumOfRest, (const BYTE *)matMasked + i * btsOfMat, btsOfMat * sizeof(BYTE));
+			memcpy((BYTE *)matSumOfRest, (const BYTE *)matMasked + i * btsOfMat, btsOfMat * sizeof(BYTE));
 		}
 		else {
 			memcpy(tem, (const BYTE *)matSumOfRest, btsOfMat * sizeof(BYTE));
-			res = add(matSumOfRest, tem, (const BYTE *)matMasked + i * btsOfMat, dimsM);
+			res = add((BYTE *)matSumOfRest, (const BYTE *)tem, (const BYTE *)matMasked + i * btsOfMat, dimsAdd);
+			CHECK(res);
 		}
 
 	}
@@ -457,18 +440,20 @@ const BYTE *matPlain
 	#if DIM_A
 
 	#if DIM_L == 16 && !DIVIDE
-	res = add(tem, matSumOfRest, matPlain, dimsM);
+	res = add(tem, (const BYTE *)matSumOfRest, matPlain, dimsAdd);
+	CHECK(res);
 	/*  = (x^T) x inv(A) ^ T */
 	res = multiply(matMasked, (const BYTE *)tem, (const BYTE *)matInvAs, dimsM);
 	#else
-	res = add(tem, matSumOfRest, matPlain, dimsM);
+	res = add(tem, matSumOfRest, matPlain, dimsAdd);
 	/*  = (x^T) x inv(A) ^ T */
-	res = multiply(matMasked[0], (const BYTE *)tem, (const BYTE *)matInvA, dimsM);
+	const int dims[4] = {DIM_S, DIM_L, DIM_A, DIM_A};
+	res = multiply(matMasked[0], (const BYTE *)tem, (const BYTE *)matInvA, dims);
 
 	#endif
 
-	#else /* DIM_A == 0 */
-	res = add(matMasked[0], (const BYTE *)matSumOfRest, (const BYTE *)matPlain, dimsM);
+	#else /* DIM_A */
+	res = add(matMasked, (const BYTE *)matSumOfRest, matPlain, dimsAdd);
 	#endif
 	return res;
 }
@@ -482,26 +467,28 @@ const BYTE *matsSecret
 {
 	int i;
 	Res res = RES_OK;
-	const int dimsD[4] = { DIM_S, DIM_L, DIM_L, DIM_L };
-
+	const int dimsM[4] = { DIM_S, DIM_L, DIM_L, DIM_L };
+	const int dimsAdd[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
 	if (matsSecret == NULL || matUnmask == NULL) return RES_INVALID_POINTER;
+	memset(matUnmask, 0, DIM_L * sizeof(BYTE));
 	#if DIM_A
 
 	#if !DIVIDE && DIM_L == 16
-	res = multiply(matUnmask, matsSecret, (const BYTE *)matAs, dimsD);
-	#else
-	res = multiply(matUnmask, matsSecret, (const BYTE *)matA, dimsD);
+	res = multiply(matUnmask, matsSecret, (const BYTE *)matAs, dimsM);
+	CHECK(res);
+	#else // DIM_L != 16
+	const int dims[4] = {DIM_S, DIM_L, DIM_A, DIM_A};
+	res = multiply(matUnmask, matsSecret, (const BYTE *)matA, dims);
 	#endif
 
 	#else /* DIM_A == 0 */
-	memcpy(matUnmask, matsSecret, DIM_L);
+	memcpy(matUnmask, matsSecret, DIM_L * sizeof(BYTE));
 	#endif
 	for (i = 1; i < MASKD; ++i){
 		BYTE tem[DIM_L] = { 0 };
-		int dimsT[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
-		memcpy(tem, (const BYTE *)matUnmask, DIM_L);
-		res = add(matUnmask, (const BYTE *)tem, matsSecret + i * DIM_L, dimsT);
-
+		memcpy((BYTE *)tem, (const BYTE *)matUnmask, DIM_L * sizeof(BYTE));
+		res = add(matUnmask, (const BYTE *)tem, matsSecret + i * DIM_L, dimsAdd);
+		CHECK(res);
 	}
 	return res;
 }
@@ -520,11 +507,13 @@ const int *dims
 	int bytsMat;
 
 	if (matEX == NULL || matEY == NULL || addRes == NULL) return RES_INVALID_POINTER;
+	if (dims[0] != dims[2] || dims[1] != dims[3]) return RES_INVALID_DIMENSION;
 	/* Calculate */
-
 	bytsMat = dims[0] * bytesOfRow(dims[1]);
+	memset(addRes, 0, bytsMat * MASKD);
 	for (i = 0; i < MASKD; ++i){
 		res = add(addRes + i * bytsMat, matEX + i * bytsMat, matEY + i * bytsMat, dims);
+		CHECK(res);
 	}
 	return res;
 }
@@ -532,15 +521,13 @@ const int *dims
 
 
 /* Masked bitAnd operation  */
-
-#if !DIVIDE && DIM_L == 16 && DIM_A
 Res bitAndWithMask(
 BYTE *bitAndRes, // bitAndRes[MASKD][2]
 const BYTE *matEX,
 const BYTE *matEY,
-const int *dims //{1,DIM_A}
+const int *dims //{1, DIM_L, 1, DIM_L}
 )
-
+#if DIM_L == 16 && DIM_A
 {
 	int i, j;
 	int index;
@@ -549,21 +536,18 @@ const int *dims //{1,DIM_A}
 	Res res = RES_OK;
 	BYTE matTij[MASKD_SQURE] = { 0 };
 	BYTE matR[MASKD_SQURE] = { 0 };
-	//BYTE matEZ[MASKD][2] = { 0 };
 
 	BYTE matEZPart[MASKD] = { 0 };
 	BYTE matEYPart[MASKD] = { 0 };
 	BYTE matEXPart[MASKD] = { 0 };
+
 	BYTE matTem[DIM_A] = { 0 };
-	BYTE randMat = 0x00;
-	const int dimsT[4] = { 1, DIM_A, DIM_A, DIM_A };
 	int btsMat;
 
 	if (matEX == NULL || matEY == NULL || bitAndRes == NULL) return RES_INVALID_POINTER;
-	if (dims[0] != 1) return RES_INVALID_DIMENSION;
-	//const int dimsT[2] = {1, DIM_A};
-
+	if (dims[0] != 1 || dims[0] != dims[2] || dims[1] != dims[3]) return RES_INVALID_DIMENSION;
 	btsMat = dims[0] * bytesOfRow(dims[1]);
+	memset(bitAndRes, 0, btsMat * MASKD);
 
 	for (slicesIndex = 0; slicesIndex != DIVIDE_PARTS; ++slicesIndex){
 		#if DIM_A == 4
@@ -595,31 +579,34 @@ const int *dims //{1,DIM_A}
 		for (i = 0; i != MASKD; ++i){
 			for (j = 0; j != MASKD; ++j){
 				const int dimsM[4] = { 1, DIM_A*DIM_A, DIM_A, DIM_A*DIM_A };
-				const int dimsPart[4] = { 1, DIM_A, 1, DIM_A };
+				const int dimsTensor[4] = { 1, DIM_A, 1, DIM_A };
 				index = i * MASKD + j;
 				#if DIM_A
 				if (i == 0 && j == 0){
-					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsPart);
+					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					CHECK(res);
 					res = multiply(matTij + index, (const BYTE *)matTem, (const BYTE *)matHat, dimsM);
-
+					CHECK(res);
 				}
 				else if (i == 0){
-					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsPart);
+					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					CHECK(res);
 					res = multiply(matTij + index, (const BYTE *)matTem, (const BYTE *)matGrave, dimsM);
-
-
+					CHECK(res);
 				}
 				else if (j == 0){
-					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsPart);
+					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					CHECK(res);
 					res = multiply(matTij + index, (const BYTE *)matTem, (const BYTE *)matAcute, dimsM);
-
+					CHECK(res);
 				}
 				else {/*  i != 0 && j != 0  */
-					res = bitAnd(matTij + index, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsPart);
+					res = bitAnd(matTij + index, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					CHECK(res);
 				}
 
 				#else  /* DIM_A == 0 */
-				res = bitAnd((matTij + index), (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dims);
+				res = bitAnd(matTij + index, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
 				#endif /* DIM_A */
 			}
 		}
@@ -630,24 +617,24 @@ const int *dims //{1,DIM_A}
 			matR[index] = matTij[index];
 			for (j = i + 1; j < MASKD; ++j){
 				BYTE tem;
+				int indexJI;
 				/* get R(i,j) through random generating */
 				index = i * MASKD + j;
-				randMat = (BYTE)rand();
+				indexJI = j * MASKD + i;
 				#if DIM_A == 4
 				randMat &= 0xf0;
 				#endif
-				matR[index] = randMat;
-				/* get R(j,i)  */
-				tem = matR[index] ^ matTij[index];
-				index = j * MASKD + i;
-				matR[index] = matTij[index] ^ tem;
+				matR[index] = (BYTE)rand();
+				/* get R(j,i)  */	
+				matR[indexJI] = matTij[indexJI] ^ matR[index] ^ matTij[index];
 				#if DIM_A
 				/*  get R(0,j) */
 				if (i == 0){
 					index = j;
 					tem = matR[index];
-
+					const int dimsT[4] = { 1, DIM_A, DIM_A, DIM_A };
 					res = multiply(matR + index, (const BYTE *)&tem, (const BYTE *)matA, dimsT);
+					CHECK(res);
 				}
 				#endif  /* DIM_A != 0 */
 			}
@@ -678,75 +665,78 @@ const int *dims //{1,DIM_A}
 }
 
 #else
-Res bitAndWithMask(
-BYTE *bitAndRes, // bitAndRes[MASKD][2]
-const BYTE *matEX,
-const BYTE *matEY,
-const int *dims
-)
 {
-	if (matEX == NULL || matEY == NULL) return RES_INVALID_POINTER;
-
-	int i, j, k;
-	int index;
 	Res res = RES_OK;
-	BYTE matTij[MASKD_SQURE] = { 0 };
-	BYTE matR[MASKD_SQURE] = { 0 };
-	const int dimsPart[4] = { 1, DIM_A, 1, DIM_A };
-	int btsMat = dims[0] * bytesOfRow(dims[1]);
+	BYTE matTij[MASKD_SQURE][DIM_L / 8] = { 0 };
+	BYTE matR[MASKD_SQURE][DIM_L / 8] = { 0 };
+	int i, j, k;
+	int index, btsMat;
+
+	if (matEX == NULL || matEY == NULL) return RES_INVALID_POINTER;
+	btsMat = dims[0] * bytesOfRow(dims[1]);
+	if (btsMat != DIM_L / 8) return RES_INVALID_DIMENSION;
+
 	/*  get matrix T  */
-	for (i = 0; i < MASKD; ++i){
-		for (j = 0; j < MASKD; ++j){
+	for (i = 0; i != MASKD; ++i){
+		for (j = 0; j != MASKD; ++j){
 			index = i * MASKD + j;
 			#if DIM_A
 			if (i == 0 && j == 0){
-				res = tensorProduct(matTem, (const BYTE *)(matEX+i), (const BYTE *)(matEY+j), dims);
-				res = multiply(&matTij[index], (const BYTE *)matTem, (const BYTE *)matHat, dimsM);
+				res = tensorProduct(matTem, (const BYTE *)matEX + i * btsMat, (const BYTE *)matEY + j * btsMat, dims);
+				CHECK(res);
+				res = multiply(matTij + index * btsMat, (const BYTE *)matTem, (const BYTE *)matHat, dimsM);
+				CHECK(res);
 			}
 			else if (i == 0){
-				matTem = tensorProduct(matEX[i], matEY[j]);
-				matTij[index] = multiply((const BYTE *)matTem, (const BYTE *)matGrave);
-				deMat(matTem);
+				res = tensorProduct(matTem, (const BYTE *)matEX+i * btsMat, (const BYTE *)matEY+j * btsMat, dims);
+				CHECK(res);
+				res = multiply(matTij + index * btsMat, (const BYTE *)matTem, (const BYTE *)matGrave, dimsM);
+				CHECK(res);
 			}
 			else if (j == 0){
-				matTem = tensorProduct(matEX[i], matEY[j]);
-				matTij[index] = multiply((const BYTE *)matTem, (const BYTE *)matAcute);
-				deMat(matTem);
+				res = tensorProduct(matTem, (const BYTE *)matEX+i* btsMat, (const BYTE *)matEY+j * btsMat, dims);
+				CHECK(res);
+				res = multiply(matTij + index * btsMat, (const BYTE *)matTem, (const BYTE *)matAcute, dimsM);
+				CHECK(res);
 			}
 			else {/*  i != 0 && j != 0  */
-				matTij[index] = bitAnd((const BYTE *)matEX[i], (const BYTE *)matEY[j]);
-			}
+				res = bitAnd(matTij + index, (const BYTE *)matEX + i, (const BYTE *)matEY + j, dims);
+				CHECK(res);
+		}
 
 			#else  /* DIM_A == 0 */
-			res = bitAnd(matTij + index, (const BYTE *)matEX + i * btsMat, (const BYTE *)matEY + j * btsMat, dimsPart);
-			#endif /* DIM_A */
+			//res = bitAnd((BYTE *)matTij + index * btsMat, (const BYTE *)matEX + i * btsMat, (const BYTE *)matEY + j * btsMat, dims);
+			//CHECK(res);
+			matTij[index][0] = matEX[i * btsMat]	 & matEY[j * btsMat];
+			matTij[index][1] = matEX[i * btsMat + 1] & matEY[j * btsMat + 1];
+#endif /* DIM_A */
 		}
 	}
-	int btsOfRow = bytesOfRow(dims[1]);
-	int btsOfMat = dims[0] * btsOfRow;
-	BYTE randMat = 0x00;
 
 	/*  get matrix R  */
-	for (i = 0; i < MASKD; ++i){
-
+	for (i = 0; i != MASKD; ++i){
 		/* get R(i,i) */
 		index = i * MASKD + i;
-		matR[index] = matTij[index];
-
-		for (j = i + 1; j < MASKD; ++j){
+		matR[index][0] = matTij[index][0];
+		matR[index][1] =  matTij[index][1];
+		for (j = i + 1; j != MASKD; ++j){
+			BYTE tem[DIM_L / 8] = { 0 };
 			/* get R(i,j) through random generating */
 			index = i * MASKD + j;
-			for (k = 0; k < btsOfMat; ++k){
-				randMat = (BYTE)rand();
-				if (dims[1] == 4) randMat &= 0xf0;
-			}
-
-			matR[index] = randMat;
+#if DIM_A == 4
+				randMat[0] &= 0xf0;
+				randMat[1] &= 0xf0;
+#endif
+			matR[index][0] = (BYTE)rand();
+			matR[index][1] = (BYTE)rand();
 
 			/* get R(j,i)  */
-			BYTE tem = matR[index] ^ matTij[index];
+			tem[0] = matR[index][0] ^ matTij[index][0];
+			tem[1] = matR[index][1] ^ matTij[index][1];
+			
 			index = j * MASKD + i;
-			matR[index] = matTij[index] ^ tem;
+			matR[index][0] = matTij[index][0] ^ tem[0];
+			matR[index][1] = matTij[index][1] ^ tem[1];
 
 			#if DIM_A
 			/*  get R(0,j) */
@@ -756,25 +746,24 @@ const int *dims
 				matR[index] = multiply(matTem, matA);
 				deMat(matTem);
 			}
-			#endif  /* DIM_A != 0 */
+			#endif  /* DIM_A */
 		}
 	}
 
-	for (i = 0; i < MASKD; ++i){
-		bitAndRes[i * btsMat] = matR[i];
-		for (j = 1; j < MASKD; ++j){
+	for (i = 0; i != MASKD; ++i){
+		bitAndRes[i * btsMat]	  = matR[i][0];
+		bitAndRes[i * btsMat + 1] = matR[i][1];
+		for (j = 1; j != MASKD; ++j){
 			index = j * MASKD + i;
-			bitAndRes[i * btsMat] ^= matR[index];
+			bitAndRes[i * btsMat]	  ^= matR[index][0];
+			bitAndRes[i * btsMat + 1] ^= matR[index][1];
 		}
 	}
 	return res;
 }
-#endif
-
-
+#endif /* DIM_L == 16 && DIM_A */
 
 #endif /* MASK */
-
 
 /*  Matrix Multiply(Transposed), (A, B) == A x B^T   */
 Res multiply(
@@ -794,7 +783,7 @@ const int *dims
 
 	bytesOfRX = bytesOfRow(dims[1]);
 	bytesOfRR = bytesOfRow(dims[2]);
-	memset(multiRes, 0, dims[0] * bytesOfRow(dims[2]));
+	memset(multiRes, 0, dims[0] * bytesOfRR);
 	/* Multiplying */
 	for (row = 0; row < dims[0]; ++row){
 		for (col = 0; col < dims[2]; ++col)
@@ -837,13 +826,12 @@ const int *dims
 	int bytesOfMat;
 
 	if (matX == NULL || matY == NULL || addRes == NULL) return RES_INVALID_POINTER;
-
 	if (dims[0] != dims[2] ||
 	dims[1] != dims[3]) return RES_INVALID_DIMENSION;
 
-	/* Calculate */
-
 	bytesOfMat = dims[0] * bytesOfRow(dims[1]);
+	memset(addRes, 0, bytesOfMat);
+	/* Calculate */
 	for (i = 0; i != bytesOfMat; ++i){
 		addRes[i] = matX[i] ^ matY[i];
 	}
@@ -866,12 +854,12 @@ const int *dims
 
 
 	if (matX == NULL || matY == NULL || bitAndRes == NULL) return RES_INVALID_POINTER;
-
 	if (dims[0] != dims[2] ||
 	dims[1] != dims[3]) return RES_INVALID_DIMENSION;
 
-	/* calculate */
 	bytesOfMat = dims[0] * bytesOfRow(dims[1]);
+	memset(bitAndRes, 0, bytesOfMat);
+	/* calculate */	
 	for (i = 0; i != bytesOfMat; ++i){
 		bitAndRes[i] = matX[i] & matY[i];
 	}

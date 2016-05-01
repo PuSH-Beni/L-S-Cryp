@@ -8,40 +8,41 @@
 
 #ifndef Fundamentals_h
 #define Fundamentals_h
-/* C11 support or not */
 #define C11_SUPPORT 0
-/* While testing, toggle this option on */
 #define TEST        1
 /* Mask the text or not */
-#define MASK        1
+#define MASK        0
 
 /* DIM_L can be '16' or '8' */
 #define DIM_L	    16
 #define DIM_S		8
-#define ELEMS		(DIM_L * DIM_S)
 
-#if MASK
 /* Tree values of DIM_A
  *  0:  masked without matrix A
  *  4:  the length of matrix A is 4-bit
  *  8:  the length of matrix A is 8-bit
  *
  */
-
+#if MASK
 #define DIM_A       8
-
-
 /* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       2
-#define MASKD_SQURE MASKD * MASKD
-#define DIVIDE      0
+#else 
+#define DIM_A		0
+#endif /* MASK*/
 
+#define DIVIDE      0
 #if DIM_A
 #define DIVIDE_PARTS (DIM_L / DIM_A)
 #else
 #define DIVIDE_PARTS 1
 #endif
-#endif /* MASK */
+
+#define ELEMS		(DIM_L * DIM_S)
+#define MASKD_SQURE (MASKD * MASKD)
+#define KEY_SIZE    (DIM_S / 2 * (DIM_L / 8))
+#define L_SIZE      (DIM_L * (DIM_L / 8))
+#define CONST_SIZE  (DIM_S * (DIM_L / 8))
 
 #include <stdlib.h>
 #include <string.h>
@@ -65,11 +66,12 @@
 #if LENG8
 #define LENGTH 8
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
-#define UNIT_BYTE 0x80
-#define UNIT_MAT {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
-#define ZERO_MAT  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define UNIT_BYTE   0x80
+#define UNIT_MAT  { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
+#define ZERO_MAT  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 /* The length(bits) of S-box and L-box */
 /* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
+
 
 #elif LENG16
 
@@ -105,7 +107,7 @@ typedef enum
 	RES_NON_MATA
 
 }Res;
-
+#define CHECK(x) if(x) return x
 
 
 

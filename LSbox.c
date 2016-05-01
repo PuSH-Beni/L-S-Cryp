@@ -12,10 +12,6 @@
 /*   MARK: Declaration     */
 /*=========================================================*/
 #if MASK
-#if DIVIDE
-static 
-BYTE **keyRoundSlices, **rdConstSlices[ROUNDS], **LSlices, *TSlices[DIVIDE_PARTS];
-#endif
 
 #if DIM_A
 extern
@@ -23,17 +19,15 @@ BYTE matA[DIM_A], matInvA[DIM_A], matTransA[DIM_A];
 
 #if !DIVIDE && DIM_L == 16
 extern
-BYTE matAs[DIM_L * 2], matInvAs[DIM_L * 2], matTransAs[DIM_L * 2];
+BYTE matAs[L_SIZE], matInvAs[L_SIZE], matTransAs[L_SIZE];
 #endif
 
 static
-BYTE  matT[DIM_L] = { 0 };
+BYTE  matT[L_SIZE] = { 0 };
 #endif /* DIM_A */
 
 #endif /* MASK */
-/********************************************
- *  static constants
- ********************************************/
+
 static const
 BYTE matL[L_SIZE] = MAT_LV;
 static const
@@ -48,133 +42,145 @@ BYTE rdConst[CONST_SIZE] = CONSTR;
 /*=========================================================*/
 
 /* 4-bit SBOX */
-#if MASK
+
 static
 Res sbox4b(
 BYTE *s4bRes,
 const BYTE *mats4b,
 const int *dims4b// [4, DIM_L]
 )
+#if MASK
 {
-	int i;
-
 	Res res = RES_OK;
 
-	BYTE tem[MASKD][4][2] = { 0 };
-	BYTE rvectWithMask[4][MASKD][2] = { 0 };
-	BYTE imdWithMask[4][MASKD][2] = { 0 };
+	BYTE rvect[4][MASKD][2] = { 0 };
+	BYTE imd[4][MASKD][2] = { 0 };
 	BYTE product[MASKD][2] = { 0 };
-	int btsVect;
-	int btsMat;
-	const int dimsB[4] = { 1, DIM_L, 1, DIM_L };
+	BYTE tem[MASKD][4][2] = { 0 };
 
-	
-	btsMat = dims4b[0] * bytesOfRow(dims4b[1]);
+	int btsVect, btsMat, i;
+	const int dimsB[4] = { 1, DIM_L, 1, DIM_L };
 
 	if (s4bRes == NULL) return RES_INVALID_POINTER;
 	if (dims4b[0] != 4) return RES_INVALID_DIMENSION;
+
+	btsMat = dims4b[0] * bytesOfRow(dims4b[1]);
+	memset(s4bRes, 0, btsMat * MASKD * sizeof(BYTE));
+
 	for (i = 0; i < MASKD; ++i){
 		int j;
 		for (j = 0; j < 4; ++j){
-			rvectWithMask[j][i][0] = mats4b[i * btsMat + j * 2];
-			rvectWithMask[j][i][1] = mats4b[i * btsMat + j * 2 + 1];
+			rvect[j][i][0] = mats4b[i * btsMat + j * 2];
+			rvect[j][i][1] = mats4b[i * btsMat + j * 2 + 1];
 		}
 	}
 
 	// a = 1 x 2 + 0
 	// b = 2 x a + 3
 	// c = 1 x b + 2
-	// d = b x c + 1
-	
-	
+	// d = b x c + 1	
 	btsVect = MASKD * 2;
-	res = bitAndWithMask((BYTE *)product, (const BYTE *)rvectWithMask + 1 * btsVect, (const BYTE *)rvectWithMask + 2 * btsVect, dimsB);
-	res = addWithMask((BYTE *)imdWithMask, (const BYTE *)product, (const BYTE *)rvectWithMask, dimsB);
 
-	res = bitAndWithMask((BYTE *)product, (const BYTE *)rvectWithMask + 2 * btsVect, (const BYTE *)imdWithMask, dimsB);
-	res = addWithMask((BYTE *)imdWithMask+ 1 * btsVect, (const BYTE *)product, (const BYTE *)rvectWithMask + 3 * btsVect, dimsB);
+	res = bitAndWithMask((BYTE *)product, (const BYTE *)rvect + 1 * btsVect, (const BYTE *)rvect + 2 * btsVect, dimsB);
+	CHECK(res);
+	res = addWithMask((BYTE *)imd, (const BYTE *)product, (const BYTE *)rvect, dimsB);
+	CHECK(res);
 
-	res = bitAndWithMask((BYTE *)product, (const BYTE *)rvectWithMask + 1 * btsVect, (const BYTE *)imdWithMask + 1 * btsVect, dimsB);
-	res = addWithMask((BYTE *)imdWithMask + 2 * btsVect, (const BYTE *)product, (const BYTE *)rvectWithMask + 2 * btsVect, dimsB);
+	res = bitAndWithMask((BYTE *)product, (const BYTE *)rvect + 2 * btsVect, (const BYTE *)imd, dimsB);
+	CHECK(res);
+	res = addWithMask((BYTE *)imd + 1 * btsVect, (const BYTE *)product, (const BYTE *)rvect + 3 * btsVect, dimsB);
+	CHECK(res);
 
-	res = bitAndWithMask((BYTE *)product, (const BYTE *)imdWithMask + 1 * btsVect, (const BYTE *)imdWithMask + 2 * btsVect, dimsB);
-	res = addWithMask((BYTE *)imdWithMask + 3 * btsVect, (const BYTE *)product, (const BYTE *)rvectWithMask + 1 * btsVect, dimsB);
+	res = bitAndWithMask((BYTE *)product, (const BYTE *)rvect + 1 * btsVect, (const BYTE *)imd + 1 * btsVect, dimsB);
+	CHECK(res);
+	res = addWithMask((BYTE *)imd + 2 * btsVect, (const BYTE *)product, (const BYTE *)rvect + 2 * btsVect, dimsB);
+	CHECK(res);
 
-	/* Generate the correct order */
-	/* d a b c */
-	//3 0 1 2
-	for (i = 0; i < MASKD; ++i){
-		*(s4bRes + i * btsMat)= imdWithMask[3][i][0];
-		*(s4bRes + i * btsMat + 1) = imdWithMask[3][i][1];
+	res = bitAndWithMask((BYTE *)product, (const BYTE *)imd + 1 * btsVect, (const BYTE *)imd + 2 * btsVect, dimsB);
+	CHECK(res);
+	res = addWithMask((BYTE *)imd + 3 * btsVect, (const BYTE *)product, (const BYTE *)rvect + 1 * btsVect, dimsB);
+	CHECK(res);
 
-		*(s4bRes + i * btsMat + 2) = imdWithMask[0][i][0];
-		*(s4bRes + i * btsMat + 3) = imdWithMask[0][i][1];
+	/* Generate the correct order
+	 * d a b c
+	 * 3 0 1 2
+	 */
+	for (i = 0; i != MASKD; ++i){
+		s4bRes[i * btsMat]     = imd[3][i][0];
+		s4bRes[i * btsMat + 1] = imd[3][i][1];
 
-		*(s4bRes + i * btsMat + 4) = imdWithMask[1][i][0];
-		*(s4bRes + i * btsMat + 5) = imdWithMask[1][i][1];
+		s4bRes[i * btsMat + 2] = imd[0][i][0];
+		s4bRes[i * btsMat + 3] = imd[0][i][1];
 
-		*(s4bRes + i * btsMat + 6) = imdWithMask[2][i][0];
-		*(s4bRes + i * btsMat + 7) = imdWithMask[2][i][1];
+		s4bRes[i * btsMat + 4] = imd[1][i][0];
+		s4bRes[i * btsMat + 5] = imd[1][i][1];
+
+		s4bRes[i * btsMat + 6] = imd[2][i][0];
+		s4bRes[i * btsMat + 7] = imd[2][i][1];
 
 	}
 	return res;
 }
 
 #else /* Unmask */
-/* A 4-bit SBOX (unmask) */
-static
-Res sbox4b(
-BYTE *s4bRes,
-const BYTE *mats4b,
-const int *dims4b// [4, DIM_L]
-)
 {
-	if (dims4b[0] != 4) return RES_INVALID_DIMENSION;
 	Res res = RES_OK;
-	BYTE rvect[4][2] = { 0 };
-	BYTE imd[4][2] = { 0 };
-	//rvect = split(mat4b, 4, 1);
+	BYTE rvect[4][DIM_L / 8] = { 0 };
+	BYTE imd[4][DIM_L / 8] = { 0 };
+	BYTE product[DIM_L / 8] = { 0 };
+	
 	int j;
-	for (j = 0; j < 4; ++j){
+	int dimsB[4] = { 1, DIM_L, 1, DIM_L};
+	int btsVect;
+
+	if (dims4b[0] != 4) return RES_INVALID_DIMENSION;
+
+	for (j = 0; j != 4; ++j){
 		rvect[j][0] = mats4b[j * 2];
 		rvect[j][1] = mats4b[j * 2 + 1];
 	}
 
-	// a = 1 x 2 + 0
-	// b = 2 x a + 3
-	// c = 1 x b + 2
-	// d = b x c + 1
-
-
-	BYTE product[2] = { 0 };
-	int dimsB[4] = { 1, DIM_L, 1, DIM_L };
-	int btsVect = 2;
-	res = bitAnd(product, (const BYTE *)rvect + btsVect, (const BYTE *)rvect + 2 * btsVect, dimsB);
+	/* a = 1 x 2 + 0
+	 * b = 2 x a + 3
+	 * c = 1 x b + 2
+	 * d = b x c + 1	
+	 */
+	btsVect = 2;
+	res = bitAnd((BYTE *)product, (const BYTE *)rvect + btsVect, (const BYTE *)rvect + 2 * btsVect, dimsB);
+	CHECK(res);
 	res = add((BYTE *)imd, (const BYTE *)product, (const BYTE *)rvect, dimsB);
+	CHECK(res);
 
-	res = bitAnd(product, (const BYTE *)rvect + btsVect * 2, (const BYTE *)imd, dimsB);
-	res = add((BYTE *)imd + btsVect, (const BYTE *)product, (const BYTE *)rvect + btsVect * 3, dimsB);
+	res = bitAnd((BYTE *)product, (const BYTE *)rvect + 2 * btsVect, (const BYTE *)imd, dimsB);
+	CHECK(res);
+	res = add((BYTE *)imd + btsVect, (const BYTE *)product, (const BYTE *)rvect + 3 * btsVect, dimsB);
+	CHECK(res);
 
-	res = bitAnd(product, (const BYTE *)rvect + btsVect, (const BYTE *)imd + btsVect, dimsB);
-	res = add((BYTE *)imd + 2 * btsVect, (const BYTE *)product, (const BYTE *)rvect + btsVect * 2, dimsB);
+	res = bitAnd((BYTE *)product, (const BYTE *)rvect + btsVect, (const BYTE *)imd + btsVect, dimsB);
+	CHECK(res);
+	res = add((BYTE *)imd + 2 * btsVect, (const BYTE *)product, (const BYTE *)rvect + 2 * btsVect, dimsB);
+	CHECK(res);
 
-	res = bitAnd(product, (const BYTE *)imd[1], (const BYTE *)imd + btsVect * 2, dimsB);
+	res = bitAnd((BYTE *)product, (const BYTE *)imd + btsVect, (const BYTE *)imd + 2 * btsVect, dimsB);
+	CHECK(res);
 	res = add((BYTE *)imd + 3 * btsVect, (const BYTE *)product, (const BYTE *)rvect + btsVect, dimsB);
+	CHECK(res);
 
 
-	/* Generate the correct order */
-	/* d a b c */ // 3012
-	*(s4bRes) = imd[3][0];
-	*(s4bRes + 1) = imd[3][1];
+	/* Generate the correct order
+	 * d a b c  // 3 0 1 2 
+	 */
+	s4bRes[0] = imd[3][0];
+	s4bRes[1] = imd[3][1];
 
-	*(s4bRes + 2) = imd[0][0];
-	*(s4bRes + 3) = imd[0][1];
+	s4bRes[2] = imd[0][0];
+	s4bRes[3] = imd[0][1];
 
-	*(s4bRes + 4) = imd[1][0];
-	*(s4bRes + 5) = imd[1][1];
+	s4bRes[4] = imd[1][0];
+	s4bRes[5] = imd[1][1];
 
-	*(s4bRes + 6) = imd[2][0];
-	*(s4bRes + 7) = imd[2][1];
+	s4bRes[6] = imd[2][0];
+	s4bRes[7] = imd[2][1];
 
 	return res;
 }
@@ -183,176 +189,150 @@ const int *dims4b// [4, DIM_L]
 
 
 /* LBOX */
-#if MASK
-#if DIVIDE
-static
-void lboxes(
-BYTE **matsLin,
-int direction /* direction == 0, means the left */
-)
-{
-	BYTE *matTem = matsLin[0];
-	matsLin[0] = multiply(matTem, TSlices[direction]);
-	deMat(matTem);
 
-	int indexOfMask;
-	for (indexOfMask = 1; indexOfMask < MASKD; ++indexOfMask){
-		matTem = matsLin[indexOfMask];
-		matsLin[indexOfMask] = multiply(matTem, LSlices[direction]);
-		deMat(matTem);
-	}
-}
-
-#else /* DIVIDE, DIM_A == DIM_L || DIM_A == 0 */
 static
 Res  lboxes(
 BYTE *matsLin
 )
+#if MASK
 {
-	Res res;
+	Res res = RES_OK;
 	int i;
 	/* z[0] = T  *  x[0] */
 	BYTE matTem[DIM_L] = { 0 };
-	const int dims[4] = { DIM_S, DIM_L, DIM_L, DIM_L };
+	const int dimsM[4] = { DIM_S, DIM_L, DIM_L, DIM_L };
+	int btsOfMat;
 
-	memcpy(matTem, (const BYTE*)matsLin, DIM_L);
+	btsOfMat = DIM_S * bytesOfRow(DIM_L);
+	memcpy((BYTE *)matTem, (const BYTE*)matsLin, btsOfMat * sizeof(BYTE));
 #if DIM_A
-	res = multiply(matsLin, (const BYTE *)matTem, (const BYTE *)matT, dims);
+	res = multiply(matsLin, (const BYTE *)matTem, (const BYTE *)matT, dimsM);
 #else /* DIM_A == 0 */
-	res = multiply(matsLin, (const BYTE *)matTem, (const BYTE *)matL, dims);
+	res = multiply(matsLin, (const BYTE *)matTem, (const BYTE *)matL, dimsM);
 #endif
-	
+	CHECK(res);
 	for (i = 1; i != MASKD; ++i){
-		memcpy(matTem, (const BYTE*)matsLin + i * DIM_L, DIM_L);
-		res = multiply(matsLin + i * DIM_L, (const BYTE *)matTem, (const BYTE *)matL, dims);
+		memcpy((BYTE *)matTem, (const BYTE*)matsLin + i * btsOfMat, btsOfMat * sizeof(BYTE));
+		res = multiply((BYTE *)matsLin + i * btsOfMat, (const BYTE *)matTem, (const BYTE *)matL, dimsM);
+		CHECK(res);
 	}
 	return res;
 }
-#endif /* DIVIDE */
 #else /* Unmask  */
-/* DIM_L-bit L-box (unmask) */
-static
-Res lboxes(
-BYTE *lin
-)
 {
 	Res res = RES_OK;
 	const int dims[4] = { DIM_S, DIM_L, DIM_L, DIM_L };
 	BYTE tem[DIM_L] = { 0 };
-	memcpy(tem, lin, DIM_L);
-	res = multiply(lin, tem, (const BYTE *)matL, dims);
+	memcpy((BYTE *)tem, matsLin, DIM_L);
+	res = multiply(matsLin, tem, (const BYTE *)matL, dims);
 	return res;
 }
 #endif /* MASK */
 
 /* SBOX*/
-#if MASK
+
 /* DIM_S-bit S-box (masked)*/
 static
 Res  sboxes(
-BYTE *matsSin,
-const BYTE *keyRound
+BYTE *matsSin
 )
+#if MASK
 {
 	int i;
 	Res res = RES_OK;
-	BYTE s4bRes[DIM_L][DIM_L] = { 0 };
-	BYTE left[MASKD][DIM_L / 2] = { 0 };
-	BYTE right[MASKD][DIM_L / 2] = { 0 };
-	BYTE sum[MASKD][DIM_L / 2] = { 0 };
-	
+	BYTE s4bRes[MASKD][KEY_SIZE] = { 0 };
+	BYTE left[MASKD][KEY_SIZE] = { 0 };
+	BYTE right[MASKD][KEY_SIZE] = { 0 };
+	BYTE sum[MASKD][KEY_SIZE] = { 0 };
+
 	BYTE *ptrOfL, *ptrOfR;
 	int  btsHalf;
 	int  theLast;
 	const int dimsF[4] = { DIM_S / 2, DIM_L, DIM_S / 2, DIM_L };
 
-	btsHalf = DIM_L / 2;
+	btsHalf = DIM_S / 2 * bytesOfRow(DIM_L);
 	theLast = MASKD - 1;
 
-	for (i = 0; i < MASKD; ++i){
-		memcpy(left + i * btsHalf, (const BYTE *)matsSin + i * btsHalf * 2, btsHalf);
-		memcpy(right + i * btsHalf, (const BYTE *)matsSin + i *btsHalf * 2 + 1, btsHalf);
+	for (i = 0; i != MASKD; ++i){
+		memcpy((BYTE *)left  + i * btsHalf, (const BYTE *)matsSin + (i * 2)     * btsHalf, btsHalf);
+		memcpy((BYTE *)right + i * btsHalf, (const BYTE *)matsSin + (i * 2 + 1) * btsHalf, btsHalf);
 	}
 
 	/* Combine a bigger sbox, from 4-bit to 8-bit */
-	
 	ptrOfL = (BYTE *)left, ptrOfR = (BYTE *)right;
 	/* Feistel Struct Begins */
-	for (i = 0; i < FEISTEL; ++i)
+	for (i = 0; i != FEISTEL; ++i)
 	{
-		BYTE tem[DIM_L / 2] = { 0 };
-		memcpy(tem, (const BYTE*)ptrOfL + theLast * btsHalf, btsHalf);
+		BYTE tem[KEY_SIZE] = { 0 };
+		memcpy((BYTE *)tem, (const BYTE*)ptrOfL + theLast * btsHalf, btsHalf * sizeof(BYTE));
 		/* add key_r to the last masked component */
-		res = add(ptrOfL + theLast * btsHalf, (const BYTE *)tem, (const BYTE *)keyRound, dimsF);
-
+		res = add(ptrOfL + theLast * btsHalf, (const BYTE *)tem, (const BYTE *)keyR, dimsF);
+		CHECK(res);
 		/* pass a 4-bit sbox */
 		res = sbox4b((BYTE *)s4bRes, (const BYTE *)ptrOfL, dimsF);
-
+		CHECK(res);
+		
 		/* recover the left matrices */
-		memcpy(ptrOfL + theLast * btsHalf, (const BYTE*)tem, btsHalf);
+		memcpy((BYTE *)ptrOfL + theLast * btsHalf, (const BYTE*)tem, btsHalf * sizeof(BYTE));
 
 		/* do 'XOR' with the right matrix */
 		res = addWithMask((BYTE *)sum, (const BYTE *)ptrOfR, (const BYTE *)s4bRes, dimsF);
-
+		CHECK(res);
 		/* exchange  */
 		ptrOfR = ptrOfL;
 		ptrOfL = (BYTE *)sum;
 	}
 
 	/* Catenate those vectors to a matrix to return */
-	for (i = 0; i < MASKD; ++i){
-		memcpy(matsSin + i * btsHalf * 2, (const BYTE *)ptrOfL + i *btsHalf, btsHalf);
-		memcpy(matsSin + i *btsHalf * 2 + 1, (const BYTE *)ptrOfR + i *btsHalf, btsHalf);
+	for (i = 0; i != MASKD; ++i){
+		memcpy((BYTE *)matsSin + (i * 2)     * btsHalf, (const BYTE *)ptrOfL + i * btsHalf, btsHalf);
+		memcpy((BYTE *)matsSin + (i * 2 + 1) * btsHalf, (const BYTE *)ptrOfR + i * btsHalf, btsHalf);
 	}
 	return res;
 }
 
 #else /* Unmask */
-
-/* DIM_S-bit S-box (unmask)*/
-static
-Res sboxes(
-BYTE *sin
-)
 {
 	/* Split matrix to rowsUpper and rowsLower */
-
-	BYTE s4bRes[DIM_L][DIM_L] = { 0 };
-	BYTE leftT[DIM_L / 2] = { 0 };
-	BYTE rightT[DIM_L / 2] = { 0 };
-	BYTE sumT[DIM_L / 2] = { 0 };
-
 	Res res = RES_OK;
+	BYTE s4bRes[KEY_SIZE] = { 0 };
+	BYTE leftT[KEY_SIZE] = { 0 };
+	BYTE rightT[KEY_SIZE] = { 0 };
+	BYTE sumT[KEY_SIZE] = { 0 };
+	BYTE *sum, *left, *right;
+
 	const int dimsF[4] = { DIM_S / 2, DIM_L, DIM_S / 2, DIM_L };
-	int btsHalf = DIM_L / 2;
-
-	memcpy(leftT , sin , btsHalf);
-	memcpy(rightT, sin + btsHalf, btsHalf);
-	BYTE *sum = sumT, *left = leftT, *right = rightT;
-
-	/* Combine a bigger sbox, from 4-bit to 8-bit */
+	int btsHalf;
 	int i;
-	/* Feistel Struct */
-	for (i = 0; i < FEISTEL; ++i)
-	{
-		/* Firstly, do 'XOR' with key_r */
-		res = add(sum, left, keyR, dimsF);
 
-		/* Secondly, through a 4-bit sbox */
-		res = sbox4b(s4bRes, sum, dimsF);
+	sum = (BYTE *)sumT; left = (BYTE *)leftT; right = (BYTE *)rightT;
 
-		/* Then do 'XOR' with the right matrix */
-		res = add(sum, right, s4bRes, dimsF);
+	btsHalf = DIM_S / 2 * bytesOfRow(DIM_L);
+	memcpy(left , matsSin , btsHalf);
+	memcpy(right, matsSin + btsHalf, btsHalf);
 	
-		/* Finally, exchange each side */
+	
+	/* Combine a bigger sbox, from 4-bit to 8-bit */
+	/* Feistel Struct */
+	for (i = 0; i != FEISTEL; ++i)
+	{
+		/* do 'XOR' with key_r */
+		res = add(sum, (const BYTE *)left, (const BYTE *)keyR, dimsF);
+		CHECK(res);
+		/* pass a 4-bit sbox */
+		res = sbox4b((BYTE *)s4bRes, (const BYTE *)sum, dimsF);
+		CHECK(res);
+		/* do 'XOR' with the right matrix */
+		res = add(sum, (const BYTE *)right, (const BYTE *)s4bRes, dimsF);
+		CHECK(res);
+		/* exchange each side */
 		right = left;
 		left = sum;
 	}
 
-
 	/* Catenate those vectors to a matrix to return */
-	memcpy(sin, left , btsHalf);
-	memcpy(sin + btsHalf * 2 + 1, right , btsHalf);
+	memcpy(matsSin, left, btsHalf);
+	memcpy(matsSin + btsHalf, right , btsHalf);
 
 	return res;
 }
@@ -373,11 +353,11 @@ Res  getMatT()
 	Res res = RES_OK;
 	const int dims[4] = { DIM_L, DIM_L, DIM_L, DIM_L };
 #if DIM_L == 16
-	res = multiply(matRight, (const BYTE *)matTransAs, (const BYTE *)matL, dims);
-	res = multiply(matT, (const BYTE *)matInvAs, (const BYTE *)matRight, dims);
+	res = multiply(matRight, (const BYTE *)matTransAs, (const BYTE *)matL    , dims);
+	res = multiply(matT	   , (const BYTE *)matInvAs  , (const BYTE *)matRight, dims);
 #else
-	res = multiply(matRight, (const BYTE *)matTransA, (const BYTE *)matL, dims);
-	res = multiply(matT, (const BYTE *)matInvA, (const BYTE *)matRight, dims);
+	res = multiply(matRight, (const BYTE *)matTransA, (const BYTE *)matL    , dims);
+	res = multiply(matT    , (const BYTE *)matInvA  , (const BYTE *)matRight, dims);
 #endif
 	return res;
 }
@@ -398,150 +378,78 @@ Res encrypto(
 	const BYTE *key
 	)
 #if MASK
-
-#if DIVIDE
-{
-	/* Split to slices in vertical dimension */
-
-	BYTE **keySlices = split(key, DIVIDE_PARTS, 2);
-	BYTE **plainSlices = split(plain, DIVIDE_PARTS, 2);
-
-	BYTE *cipherSlices[DIVIDE_PARTS];
-
-	/* Encoded Plain */
-	int indexOfSlices;
-	int theLast = MASKD - 1;
-	BYTE **maskedPlain[DIVIDE_PARTS] = { 0 };
-	for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
-		maskedPlain[indexOfSlices] = encode(plainSlices[indexOfSlices]);
-		if (maskedPlain[indexOfSlices] == NULL) return NULL;
-
-		/* Add Key */
-		BYTE *matTem = maskedPlain[indexOfSlices][theLast];
-		maskedPlain[indexOfSlices][theLast] = add(maskedPlain[indexOfSlices][theLast], keySlices[indexOfSlices]);
-		deMat(matTem);
-	}
-
-	int indexOfRound;
-	BYTE **matsMix = NULL;
-	BYTE **matsTem = NULL;
-	for (indexOfRound = 0; indexOfRound != ROUNDS; ++indexOfRound)
-	{
-		for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
-			/* S-box */
-			sboxes(maskedPlain[indexOfSlices], keyRoundSlices[indexOfSlices]);
-			/* L-box */
-			lboxes(maskedPlain[indexOfSlices], indexOfSlices);
-			/* Mix the slices */
-			if (!indexOfSlices) matsMix = maskedPlain[indexOfSlices];
-			else {
-				matsTem = matsMix;
-				matsMix = addWithMask(maskedPlain[indexOfSlices], matsTem);
-				deMats(maskedPlain[indexOfSlices], MASKD);
-				deMats(matsTem, MASKD);
-			}
-			//maskedPlain[indexOfSlices] = (BYTE **)malloc(MASKD * sizeof(BYTE *));
-		}  
-		/* Split it */
-		int indexOfMask;
-		for (indexOfMask = 0; indexOfMask != MASKD; ++indexOfMask){
-			matsTem = split(matsMix[indexOfMask], DIVIDE_PARTS, 2);
-			for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
-				maskedPlain[indexOfSlices][indexOfMask] = matsTem[indexOfSlices];
-			}			
-		}
-
-
-		/* Add Key And Round Constant */
-		for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
-			BYTE *roundKeySlice = add(rdConstSlices[indexOfRound][indexOfSlices], keySlices[indexOfSlices]);
-			BYTE *matTem = maskedPlain[indexOfSlices][theLast];
-			maskedPlain[indexOfSlices][theLast] = add(roundKeySlice, matTem);
-			deMat(matTem);
-			deMat(roundKeySlice);
-		}
-
-	}
-
-	for (indexOfSlices = 0; indexOfSlices != DIVIDE_PARTS; ++indexOfSlices){
-		cipherSlices[indexOfSlices] = decode(maskedPlain[indexOfSlices]);
-	}
-
-	BYTE *cipher = cat(cipherSlices, DIVIDE_PARTS, 2);
-
-	// dePostCal();
-	return cipher;
-}
-
-#else /* DIVIDE */
 {
 	Res res = RES_OK;
 	BYTE matMasked[MASKD][DIM_L] = { 0 };
 	BYTE tem[DIM_L] = { 0 };
 	int theLast;
-	const int dimsA[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
+	const int dims[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
 	int indexOfRound;
 	int btsMat;
 	if (plain == NULL || key == NULL) return RES_INVALID_POINTER;
 
-	/* Encoded Plain */
-
+	/* Encode PlainText */
 	res = encode((BYTE *)matMasked, plain);
-
+	CHECK(res);
+	
 	/* Add Key */
 	theLast = MASKD - 1;
 	btsMat = DIM_S * bytesOfRow(DIM_L);
-	
 
-	memcpy(tem, (const BYTE *)(matMasked + theLast * btsMat), DIM_L);
-	res = add((BYTE *)(matMasked + theLast * btsMat), key, (const BYTE *)tem, dimsA);	
-	for (indexOfRound = 0; indexOfRound < ROUNDS; ++indexOfRound)
+	memcpy((BYTE *)tem, (const BYTE *)matMasked + theLast * btsMat, btsMat * sizeof(BYTE));
+	res = add((BYTE *)matMasked + theLast * btsMat, key, (const BYTE *)tem, dims);
+	
+	for (indexOfRound = 0; indexOfRound != ROUNDS; ++indexOfRound)
 	{
 		BYTE roundK[DIM_L] = { 0 };
 
-		res = sboxes((BYTE *)matMasked, (BYTE *)keyR);
+		res = sboxes((BYTE *)matMasked);
+		CHECK(res);
 		res = lboxes((BYTE *)matMasked);
-		res = add((BYTE *)roundK, (const BYTE *)rdConst, key, dimsA);
-
+		CHECK(res);
+		res = add((BYTE *)roundK, rdConst, key, dims);
+		CHECK(res);
 		/* Add Key And Round Constant */
-		memcpy(tem, (const BYTE *)(matMasked + theLast * btsMat), DIM_L);
-		res = add((BYTE *)(matMasked + theLast * btsMat), (const BYTE *)tem, (const BYTE *)roundK, dimsA);
-
+		memcpy((BYTE *)tem, (const BYTE *)matMasked + theLast * btsMat, DIM_L);
+		res = add((BYTE *)matMasked + theLast * btsMat, (const BYTE *)tem, (const BYTE *)roundK, dims);
+		CHECK(res);
 	}
 	/* Decode Cipher */
 	res = decode(cipher, (const BYTE *)matMasked);
 	return res;
 
 }
-#endif /* DIVIDE_PARTS */
-
-#else /* Unmask */
-	/* Encryption begins */
+#else
 {
-	if (plain == NULL || key == NULL || ROUNDS < 0) return RES_INVALID_POINTER;
-
-	BYTE  tem[DIM_L] = { 0 };
-	Res res = RES_OK;
-	int btsMat = DIM_S * bytesOfRow(DIM_L);
-	const int dimsA[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
-	res = add(cipher, plain, key, dimsA);
+	Res  res = RES_OK;
+	BYTE sum[DIM_L] = { 0 };
 	
-	int round_i;
+	int btsMat, round_i;
+	const int dims[4] = { DIM_S, DIM_L, DIM_S, DIM_L };
+	
+	if (plain == NULL || key == NULL || ROUNDS < 0) return RES_INVALID_POINTER;
+	btsMat = DIM_S * bytesOfRow(DIM_L);
+	res = add(cipher, plain, key, dims);
+	CHECK(res);
+
 	for (round_i = 0; round_i != ROUNDS; ++round_i)
 	{
 		res = sboxes(cipher);
+		CHECK(res);
 		res = lboxes(cipher);
-		memcpy(tem, cipher, DIM_L);
-		res = add(tem,cipher, key, dimsA);
+		CHECK(res);
 
-		res = add(cipher, tem, rdConst, dimsA);
+		res = add(sum, cipher, key, dims);
+		CHECK(res);
+		res = add(cipher, (const BYTE *)sum, rdConst, dims);
+		CHECK(res);
 	}
 
 	return res;
 }
 #endif /* MASK */
 
-void encrypto_fixed(){
+Res encrypto_fixed(){
 	Res res = RES_OK;
 	BYTE cipher[DIM_L] = { 0 };
 
@@ -549,4 +457,5 @@ void encrypto_fixed(){
 	const BYTE cipherK[DIM_L] = { 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf, 0xb0 };
 
 	res = encrypto(cipher, plainT, cipherK);
+	return res;
 }
