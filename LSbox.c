@@ -8,9 +8,10 @@
 
 #include "LSbox.h"
 
-/*=========================================================*/
-/*   MARK: Declaration     */
-/*=========================================================*/
+/* ================================================================================
+ * ============================ Global Variables' Declaration =====================
+ * ================================================================================
+ */
 #if MASK
 
 #if DIM_A
@@ -37,9 +38,11 @@ BYTE rdConst[CONST_SIZE] = CONSTR;
 
 
 
-/*=========================================================*/
-/*   MARK: Private   Functions      */
-/*=========================================================*/
+/* ===================================================================================
+ * ============================ Private Functions(static) ============================
+ * ===================================================================================
+ */
+
 
 /* 4-bit SBOX */
 
@@ -134,7 +137,6 @@ const int *dims4b// [4, DIM_L]
 	int btsVect;
 
 	if (dims4b[0] != 4) return RES_INVALID_DIMENSION;
-
 	for (j = 0; j != 4; ++j){
 		rvect[j][0] = mats4b[j * 2];
 		rvect[j][1] = mats4b[j * 2 + 1];
@@ -245,7 +247,6 @@ BYTE *matsSin
 	BYTE right[MASKD][KEY_SIZE] = { 0 };
 	BYTE sum[MASKD][KEY_SIZE] = { 0 };
 
-	BYTE *ptrOfL, *ptrOfR;
 	int  btsHalf;
 	int  theLast;
 	const int dimsF[4] = { DIM_S / 2, DIM_L, DIM_S / 2, DIM_L };
@@ -259,34 +260,34 @@ BYTE *matsSin
 	}
 
 	/* Combine a bigger sbox, from 4-bit to 8-bit */
-	ptrOfL = (BYTE *)left, ptrOfR = (BYTE *)right;
 	/* Feistel Struct Begins */
 	for (i = 0; i != FEISTEL; ++i)
 	{
 		BYTE tem[KEY_SIZE] = { 0 };
-		memcpy((BYTE *)tem, (const BYTE*)ptrOfL + theLast * btsHalf, btsHalf * sizeof(BYTE));
+		memcpy((BYTE *)tem, (const BYTE*)left + theLast * btsHalf, btsHalf * sizeof(BYTE));
 		/* add key_r to the last masked component */
-		res = add(ptrOfL + theLast * btsHalf, (const BYTE *)tem, (const BYTE *)keyR, dimsF);
-		CHECK(res);
-		/* pass a 4-bit sbox */
-		res = sbox4b((BYTE *)s4bRes, (const BYTE *)ptrOfL, dimsF);
+		res = add((BYTE *)left + theLast * btsHalf, (const BYTE *)tem, (const BYTE *)keyR, dimsF);
 		CHECK(res);
 		
-		/* recover the left matrices */
-		memcpy((BYTE *)ptrOfL + theLast * btsHalf, (const BYTE*)tem, btsHalf * sizeof(BYTE));
-
-		/* do 'XOR' with the right matrix */
-		res = addWithMask((BYTE *)sum, (const BYTE *)ptrOfR, (const BYTE *)s4bRes, dimsF);
+		/* pass a 4-bit sbox */
+		res = sbox4b((BYTE *)s4bRes, (const BYTE *)left, dimsF);
 		CHECK(res);
+		
+		/* do 'XOR' with the right matrix */
+		res = addWithMask((BYTE *)sum, (const BYTE *)right, (const BYTE *)s4bRes, dimsF);
+		CHECK(res);
+		
 		/* exchange  */
-		ptrOfR = ptrOfL;
-		ptrOfL = (BYTE *)sum;
+		memcpy((BYTE *)right, (const BYTE *)left, (MASKD - 1) * btsHalf);
+		/* recover the left matrices */
+		memcpy((BYTE *)right + theLast * btsHalf, (const BYTE*)tem, btsHalf);
+		memcpy((BYTE *)left , (const BYTE *)sum , MASKD * btsHalf);
 	}
 
 	/* Catenate those vectors to a matrix to return */
 	for (i = 0; i != MASKD; ++i){
-		memcpy((BYTE *)matsSin + (i * 2)     * btsHalf, (const BYTE *)ptrOfL + i * btsHalf, btsHalf);
-		memcpy((BYTE *)matsSin + (i * 2 + 1) * btsHalf, (const BYTE *)ptrOfR + i * btsHalf, btsHalf);
+		memcpy((BYTE *)matsSin + (i * 2)     * btsHalf, (const BYTE *)left  + i * btsHalf, btsHalf);
+		memcpy((BYTE *)matsSin + (i * 2 + 1) * btsHalf, (const BYTE *)right + i * btsHalf, btsHalf);
 	}
 	return res;
 }
@@ -299,17 +300,14 @@ BYTE *matsSin
 	BYTE leftT[KEY_SIZE] = { 0 };
 	BYTE rightT[KEY_SIZE] = { 0 };
 	BYTE sumT[KEY_SIZE] = { 0 };
-	BYTE *sum, *left, *right;
 
 	const int dimsF[4] = { DIM_S / 2, DIM_L, DIM_S / 2, DIM_L };
 	int btsHalf;
 	int i;
 
-	sum = (BYTE *)sumT; left = (BYTE *)leftT; right = (BYTE *)rightT;
-
 	btsHalf = DIM_S / 2 * bytesOfRow(DIM_L);
-	memcpy(left , matsSin , btsHalf);
-	memcpy(right, matsSin + btsHalf, btsHalf);
+	memcpy(leftT , matsSin , btsHalf);
+	memcpy(rightT, matsSin + btsHalf, btsHalf);
 	
 	
 	/* Combine a bigger sbox, from 4-bit to 8-bit */
@@ -317,22 +315,23 @@ BYTE *matsSin
 	for (i = 0; i != FEISTEL; ++i)
 	{
 		/* do 'XOR' with key_r */
-		res = add(sum, (const BYTE *)left, (const BYTE *)keyR, dimsF);
+		res = add(sumT, (const BYTE *)leftT, (const BYTE *)keyR, dimsF);
 		CHECK(res);
 		/* pass a 4-bit sbox */
-		res = sbox4b((BYTE *)s4bRes, (const BYTE *)sum, dimsF);
+		res = sbox4b((BYTE *)s4bRes, (const BYTE *)sumT, dimsF);
 		CHECK(res);
 		/* do 'XOR' with the right matrix */
-		res = add(sum, (const BYTE *)right, (const BYTE *)s4bRes, dimsF);
+		res = add(sumT, (const BYTE *)rightT, (const BYTE *)s4bRes, dimsF);
 		CHECK(res);
+		
 		/* exchange each side */
-		right = left;
-		left = sum;
+		memcpy(rightT, leftT, btsHalf);
+		memcpy(leftT, sumT, btsHalf);
 	}
 
 	/* Catenate those vectors to a matrix to return */
-	memcpy(matsSin, left, btsHalf);
-	memcpy(matsSin + btsHalf, right , btsHalf);
+	memcpy(matsSin, leftT, btsHalf);
+	memcpy(matsSin + btsHalf, rightT, btsHalf);
 
 	return res;
 }
@@ -368,9 +367,10 @@ Res  getMatT()
 
 
 
-/*=========================================================*/
-/*   MARK: Public   Functions      */
-/*=========================================================*/
+/* ================================================================================
+ * ============================    Public Functions   =============================
+ * ================================================================================
+ */
 
 Res encrypto(
 	BYTE *cipher,

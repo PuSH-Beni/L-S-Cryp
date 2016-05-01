@@ -9,9 +9,10 @@
 
 #include "Fundamentals.h"
 
-/*=========================================================*/
-/*   MARK: Declaration     */
-/*=========================================================*/
+/* ================================================================================
+ * ============================ Global Variables' Declaration =====================
+ * ================================================================================
+ */
 #if DIM_A
 /* DIM_A == 4 or DIM_A == 8 */
 static
@@ -22,30 +23,10 @@ BYTE matAs[L_SIZE] = { 0 }, matInvAs[L_SIZE] = { 0 }, matTransAs[L_SIZE] = { 0 }
 #endif
 
 
-/*=========================================================*/
-/*   MARK: Private   Functions      */
-/*=========================================================*/
-
-
-/* Calculate the # of bytes in one row */
-int bytesOfRow(
-int col
-)
-{
-	int bytes;
-	// bytes of each row :: if dim_col < LENGTH, allocate a byte as well
-	if (col < LENGTH) return 1;
-
-	#if LENG16
-	bytes = col >> 4;
-	#elif LENG8
-	bytes = col / 8; // col / LENGTH
-	#endif
-	bytes = (col % LENGTH) ? bytes + 1 : bytes;
-	return bytes;
-}
-
-
+/* ===================================================================================
+ * ============================ Private Functions(static) ============================
+ * ===================================================================================
+ */
 
 
 /* Shift bit form j -> i */
@@ -334,9 +315,30 @@ const int *dims // {1, DIM_A}
 
 
 
-/*=========================================================*/
-/*   MARK: Public   Functions      */
-/*=========================================================*/
+/* ================================================================================
+ * ============================    Public Functions   =============================
+ * ================================================================================
+ */
+
+/* Calculate the # of bytes in one row */
+int bytesOfRow(
+	int col
+	)
+{
+	int bytes;
+	// bytes of each row :: if dim_col < LENGTH, allocate a byte as well
+	if (col < LENGTH) return 1;
+
+#if LENG16
+	bytes = col >> 4;
+#elif LENG8
+	bytes = col / 8; // col / LENGTH
+#endif
+	bytes = (col % LENGTH) ? bytes + 1 : bytes;
+	return bytes;
+}
+
+
 #if MASK
 #if DIM_A
 /* Set-up */
@@ -869,7 +871,3 @@ const int *dims
 
 
 
-
-/* =========================================== */
-/*                The   End                    */
-/* =========================================== */

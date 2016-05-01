@@ -8,28 +8,41 @@
 
 #ifndef Fundamentals_h
 #define Fundamentals_h
-#define C11_SUPPORT 0
-#define TEST        1
-/* Mask the text or not */
-#define MASK        0
 
-/* DIM_L can be '16' or '8' */
-#define DIM_L	    16
-#define DIM_S		8
 
-/* Tree values of DIM_A
- *  0:  masked without matrix A
- *  4:  the length of matrix A is 4-bit
- *  8:  the length of matrix A is 8-bit
- *
+/*  - DIM_A: Tree values of DIM_A
+ *				'0' - masked without matrix A
+ *				'4' - the length of matrix A is 4-bit
+ *				'8' - the length of matrix A is 8-bit
+ *  - MASK:  Encryption is masked if MASK is set to '1', otherwise unmasked
+ *  - MASKD: The dimension of the mask
  */
+#define TEST        1
+
+#define MASK        1
+
 #if MASK
+
 #define DIM_A       8
-/* The dimension of the mask, i.e. x_1, x_2, ..., x_d */
 #define MASKD       2
+
 #else 
 #define DIM_A		0
 #endif /* MASK*/
+
+
+
+
+
+/* -------------------------------------------------------------------------------------
+ * -- MARK:   DO NOT CHANGE THE FOLLOWING SETTINGS  ------------------------------------
+ * -------------------------------------------------------------------------------------
+ */
+
+#define C11_SUPPORT 0
+/* DIM_L can be '16' or '8' */
+#define DIM_L	    16
+#define DIM_S		8
 
 #define DIVIDE      0
 #if DIM_A
@@ -55,10 +68,10 @@
 #endif /* C11_SUPPORT */
 
 
-/*=========================================================*/
-/*   Definations About CONSTANTS    */
-/*=========================================================*/
-
+/* ===============================================================================
+ * ============================ Constants' Defination =============================
+ * ================================================================================
+ */
 
 /* Use BYTE or WORD */
 #define LENG8  1
@@ -110,13 +123,13 @@ typedef enum
 #define CHECK(x) if(x) return x
 
 
+/* ===============================================================================
+ * ============================ Public  Functions ================================
+ * ===============================================================================
+ */
 
 
-/*=========================================================*/
-/*   Functions      */
-/*=========================================================*/
 
-int bytesOfRow(int col);
 #if MASK
 /* Encode(Mask) the plain text */
 Res encode(BYTE *matMasked, const BYTE *matPlain);
@@ -135,6 +148,7 @@ Res addWithMask(BYTE *addRes, const BYTE *matEX, const  BYTE *matEY, const int *
 
 #endif /* MASK */
 
+int bytesOfRow(int col);
 
 /* Multiply(X, Y) equals:   matX x [ Transpose(matY) ]  */
 Res multiply(BYTE *multiRes, const BYTE *matX, const BYTE *matY, const int *dims);
