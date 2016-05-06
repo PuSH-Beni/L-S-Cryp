@@ -22,7 +22,8 @@ BYTE matA[DIM_A] = { 0 }, matInvA[DIM_A] = { 0 }, matTransA[DIM_A] = { 0 };
 BYTE matAs[L_SIZE] = { 0 }, matInvAs[L_SIZE] = { 0 }, matTransAs[L_SIZE] = { 0 };
 #endif
 
-
+static
+BYTE lookupTable[] = POP_CONT;
 /* ===================================================================================
  * ============================ Private Functions(static) ============================
  * ===================================================================================
@@ -803,10 +804,17 @@ const int *dims
 				ptrOfMatX = matX + row * bytesOfRX + i;
 				ptrOfMatY = matY + col * bytesOfRX + i;
 
-				//vectTem = (BYTE)__builtin_popcount((*ptrOfMatX) & (*ptrOfMatY));
+				/* Using
+				 *	- popcount(): the result is a num, need to cast
+				 *  - lookupTable and sumOgByte: the result bit stores at the MSB
+				 */
+				//vectTem = (BYTE)__builtin_popcount((*ptrOfMatX) & (*ptrOfMatY)); 
 				//vectTem <<= (LENGTH - 1 - offset);
-				vectTem = sumOfByte((*ptrOfMatX) & (*ptrOfMatY));
-				vectTem >>= offset;
+				//vectTem = sumOfByte((*ptrOfMatX) & (*ptrOfMatY));
+
+				vectTem = lookupTable[ (*ptrOfMatX) & (*ptrOfMatY) ];								
+				vectTem >>= offset;				
+
 				(*ptrOfMatRet) ^= vectTem;
 			}
 		}

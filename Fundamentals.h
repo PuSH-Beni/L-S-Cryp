@@ -75,15 +75,13 @@
 
 /* Use BYTE or WORD */
 #define LENG8  1
-
+#define LENG16 0
 #if LENG8
 #define LENGTH 8
 /* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
 #define UNIT_BYTE   0x80
 #define UNIT_MAT  { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
 #define ZERO_MAT  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-/* The length(bits) of S-box and L-box */
-/* 'ELEMS' indicates the whole length(bits) of a plain text( key, cipher etc.) */
 
 
 #elif LENG16
@@ -95,6 +93,22 @@
 typedef unsigned short BASE;
 #endif /* LENGTH */
 
+#define POP_CONT  {	0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\
+					0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,}
 
 #if C11_SUPPORT
 typedef uint8_t             BYTE;
@@ -159,6 +173,7 @@ Res bitAnd(BYTE *bitAndRes, const BYTE *matX, const BYTE *matY, const int *dims)
 /* Simple add operation, as same as  XOR, i.e. '^' */
 Res add(BYTE *addRes, const BYTE *matX, const  BYTE *matY, const int *dims);
 
+/* Transepositino */
 Res transpose(BYTE *transRes, const BYTE *matOrig, const int *dims);
 
 
