@@ -18,7 +18,7 @@
 /*=========================================================*/
 
 #define ENCRYPT_TEST					 1
-#define TIMES							 2
+#define TIMES							 100
 #if DIM_A
 #if DIM_A
 extern
@@ -116,8 +116,11 @@ int main(){
 #endif
 	// test the Encrypto
 	double timeStart = (double)clock();
-	res = encrypto(cipher, plainT, cipherK);
-	res = encrypto_fixed();
+	
+	for (int i = 0; i < TIMES; ++i){
+		res = encrypto(cipher, plainT, cipherK);
+		//res = encrypto_fixed();
+	}	
 	double timeEnd = (double)clock();
 	printf("\n\n  --> result:\n");
 	outputMat(cipher, 16);

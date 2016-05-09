@@ -80,6 +80,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define ITRMAX 256
 
 /* If the compiler supports C11, 'stdbool.h' and 'stdint.h' can be used */
 #if C11_SUPPORT

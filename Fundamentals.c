@@ -15,13 +15,6 @@
  */
 #if DIM_A
 /* DIM_A == 4 or DIM_A == 8 */
-#if DIM_A == 4
-static const
-int itrMax = 16;
-#else
-static const
-int itrMax = 256;
-#endif
 
 static
 BYTE matHat[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 }, matGrave[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 }, matAcute[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
@@ -30,10 +23,10 @@ BYTE matA[DIM_A] = { 0 }, matInvA[DIM_A] = { 0 }, matTransA[DIM_A] = { 0 };
 BYTE matAs[L_SIZE] = { 0 }, matInvAs[L_SIZE] = { 0 }, matTransAs[L_SIZE] = { 0 };
 
 static
-BYTE multi8[DIM_A * 3][256] = { 0 };
+BYTE multi8[DIM_A * DIM_A / LENGTH * 3][ITRMAX] = { 0 };
 
 static
-BYTE multiA[256] = { 0 };
+BYTE multiA[ITRMAX] = { 0 };
 #endif
 
 static const
@@ -370,37 +363,19 @@ Res setupMultiTable(
 	int matIndex;
 	BYTE vect;
 	BYTE * const mat[3] = { matHat, matGrave, matAcute };
-
+	const int tabs = DIM_A * DIM_A / LENGTH;
 
 	for (matIndex = 0; matIndex < 3; ++matIndex){
-		for (itr = 0, vect = 0x00; itr < itrMax; ++itr, ++vect){
-			for (tab = 0; tab < DIM_A; ++tab){
-				int tabN = matIndex * DIM_A + tab;
+		for (itr = 0, vect = 0x00; itr < ITRMAX; ++itr, ++vect){
+			for (tab = 0; tab < tabs; ++tab){
+				int tabN = matIndex * tabs + tab;
 				/* Multiplying */
 				int row;
-#if DIM_A == 4
-				int oddFlag = tab & 0x01 ? 1 : 0;
-				BYTE *ptrMat = tab < 2 ? mat[matIndex] : mat[matIndex] + 1;
-				for (row = 0; row < DIM_A; ++row, ptrMat += 2)
-#else
 				BYTE *ptrMat = mat[matIndex] + tab;
-				for (row = 0; row < DIM_A; ++row, ptrMat += DIM_A)
-#endif
+				for (row = 0; row < DIM_A; ++row, ptrMat += tabs)
 				{
 					BYTE vectTem;
-#if DIM_A == 4
-					BYTE tem;
-					if (oddFlag){
-						tem = ((*ptrMat) & 0x0f) << 4;
-						tem &= vect;
-					}
-					else{
-						tem = vect & (*ptrMat);
-					}
-					vectTem = lookupTable[row][tem];
-#else
 					vectTem = lookupTable[row][vect & (*ptrMat)];
-#endif
 					if (vectTem)
 						multi8[tabN][vect] ^= vectTem;
 				}
@@ -409,7 +384,7 @@ Res setupMultiTable(
 	}
 
 
-	for (itr = 0, vect = 0x00; itr < itrMax; ++itr, ++vect){
+	for (itr = 0, vect = 0x00; itr < ITRMAX; ++itr, ++vect){
 		int row;
 		BYTE *ptrMat = matA;
 		for (row = 0; row < DIM_A; ++row, ++ptrMat)
@@ -423,6 +398,7 @@ Res setupMultiTable(
 
 	return RES_OK;
 }
+
 
 
 /* Set-up */
@@ -491,21 +467,11 @@ BYTE multiplyTable(
 {
 	int i;
 	BYTE ret = 0x00;
-	BYTE realIndex = index * DIM_A;
-	for (i = 0; i < DIM_A; ++i){
-#if DIM_A == 4
-		int oddFlag = i & 0x01 ? 1 : 0;
-		BYTE tem = vectX[i < 2 ? 0 : 1];
-		if (oddFlag){
-			tem = (tem & 0x0f) << 4;
-		}
-		else{
-			tem &= 0xf0;
-		}
-		ret ^= multi8[realIndex + i][tem];
-#else
+	const int tabs = DIM_A * DIM_A / LENGTH;
+	BYTE realIndex = index * tabs;
+
+	for (i = 0; i < tabs; ++i){
 		ret ^= multi8[realIndex + i][vectX[i]];
-#endif
 	}
 	return ret;
 }
@@ -750,15 +716,14 @@ Res bitAndWithMask(
 #if DIM_A
 				/*  get R(0,j) */
 				if (i == 0){
-					matR[j] = multiA[matR[j]];
-					/**** derprecated  ****
-					 * 	BYTE tem;
-					 *	index = j;
-					 *	tem = matR[index];
-					 *	const int dimsT[4] = { 1, DIM_A, DIM_A, DIM_A };
-					 *	res = multiply(matR + index, (const BYTE *)&tem, (const BYTE *)matA, dimsT);
-					 *	CHECK(res);
-					 */
+					matR[j] = multiA[matR[j]];			
+						//BYTE tem;
+					 	//index = j;
+					 	//tem = matR[index];
+					 	//const int dimsT[4] = { 1, DIM_A, DIM_A, DIM_A };
+					 	//res = multiply(matR + index, (const BYTE *)&tem, (const BYTE *)matA, dimsT);
+					 	//CHECK(res);
+					 
 				}
 #endif  /* DIM_A != 0 */
 			}
