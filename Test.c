@@ -56,8 +56,8 @@ int main(){
 
 	BYTE x[8] = {0xc1, 0x4a, 0xe0, 0xd8, 0xc9, 0x8e, 0x69, 0xeb};
 	BYTE y[8] = {0xe1, 0x2a, 0xeb, 0x53, 0x88, 0x8f, 0xe2, 0x4b};
-	BYTE E[8] = UNIT_MAT;
-	int dimsA[4] = { 8, 8, 8, 8 };
+	
+	int dimsA[4] = { DIM_A, DIM_A, DIM_A, DIM_A };
 	BYTE pd[16*5] = { 0 };
 	BYTE encoded[16*5] = { 0 };
 	BYTE trans[8 * 2] = { 0 };
@@ -68,22 +68,23 @@ int main(){
 	outputMat(cipherK, DIM_L);
 
 #if DIM_A
+	BYTE E[8] = UNIT_MAT;
 	res = transpose(trans, matA, dimsA);
 	//test the matrix A
 	printf("\n\n  --> matA:\n");
-	outputMat(matA, 8);
+	outputMat(matA, DIM_A);
 	printf("\n\n  --> matInvA:\n");
-	outputMat(matInvA, 8);
+	outputMat(matInvA, DIM_A);
 	printf("\n\n  --> matA x matInvA:\n");
 	res = multiply(pd, matInvA, matTransA, dimsA);
-	outputMat(pd, 8);
+	outputMat(pd, DIM_A);
 
 	// test the matrix Big_A
 	printf("\n\n  --> matAs:\n");
 	outputMat(matAs, 32);
 	printf("\n\n  --> matInvAs:\n");
 	outputMat(matInvAs, 32);
-	int dimsL[4] = {16,16,16,16};
+	int dimsL[4] = { DIM_L, DIM_L, DIM_L, DIM_L };
 	printf("\n\n  --> matAs x matInvAs:\n");
 	res = multiply(pd, matInvAs, matTransAs, dimsL);
 	outputMat(pd, 32);
@@ -92,11 +93,11 @@ int main(){
 	// test the bitAndWithMask
 	res = encode(encoded, plainT);
 	printf("\n\n  --> Encoded PlainText:\n");
-	outputMat(encoded, 8 * 4);
+	outputMat(encoded, DIM_L * MASKD);
 
 	res = decode(trans,encoded);
 	printf("\n\n  --> Decoded PlainText:\n");
-	outputMat(trans, 16);
+	outputMat(trans, DIM_L);
 
 	int dimsBA[4] = { 1, DIM_L, 1, DIM_L };
 	res = bitAnd(trans, plainT, plainT+2, dimsBA);

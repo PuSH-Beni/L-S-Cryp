@@ -23,7 +23,7 @@
 
 #if MASK
 
-#define DIM_A       8
+#define DIM_A       4
 #define MASKD       2
 
 #else 
@@ -45,17 +45,37 @@
 #define DIM_S		8
 
 #define DIVIDE      0
-#if DIM_A
-#define DIVIDE_PARTS (DIM_L / DIM_A)
-#else
-#define DIVIDE_PARTS 1
+	#if DIM_A
+		#define DIVIDE_PARTS (DIM_L / DIM_A)
+	#else
+		#define DIVIDE_PARTS 1
 #endif
+
+/* Use BYTE or WORD */
+#define LENG8  1
+#define LENG16 0
+#if LENG8
+	#define LENGTH 8
+	/* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
+	#define UNIT_BYTE   0x80
+	#if DIM_A == 8
+		#define UNIT_MAT { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
+	#elif DIM_A == 4
+		#define UNIT_MAT { 0x80, 0x40, 0x20, 0x10 }
+	#endif
+	#define ZERO_MAT	{ 0x00 }
+#elif LENG16
+	#define LENGTH 16
+	#define IDENT  0x8000
+	#define INDENT_MAT {0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 }
+	#define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#endif /* LENGTH */
 
 #define ELEMS		(DIM_L * DIM_S)
 #define MASKD_SQURE (MASKD * MASKD)
-#define KEY_SIZE    (DIM_S / 2 * (DIM_L / 8))
-#define L_SIZE      (DIM_L * (DIM_L / 8))
-#define CONST_SIZE  (DIM_S * (DIM_L / 8))
+#define KEY_SIZE    (DIM_S / 2 * (DIM_L / LENGTH))
+#define L_SIZE      (DIM_L * (DIM_L / LENGTH))
+#define CONST_SIZE  (DIM_S * (DIM_L / LENGTH))
 
 #include <stdlib.h>
 #include <string.h>
@@ -73,25 +93,7 @@
  * ================================================================================
  */
 
-/* Use BYTE or WORD */
-#define LENG8  1
-#define LENG16 0
-#if LENG8
-#define LENGTH 8
-/* 'IDENT' ---> Represents a identity vector, whose MSB is '1' */
-#define UNIT_BYTE   0x80
-#define UNIT_MAT  { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 }
-#define ZERO_MAT  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
-
-#elif LENG16
-
-#define LENGTH 16
-#define IDENT  0x8000
-#define INDENT_MAT {0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 }
-#define ZERO_MAT {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-typedef unsigned short BASE;
-#endif /* LENGTH */
 
 #define POP_CONT  {	0, 128, 128, 0, 128, 0, 0, 128, 128, 0, 0, 128, 0, 128, 128, 0,\
 					128, 0, 0, 128, 0, 128, 128, 0, 0, 128, 128, 0, 128, 0, 0, 128,\

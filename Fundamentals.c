@@ -16,7 +16,7 @@
 #if DIM_A
 /* DIM_A == 4 or DIM_A == 8 */
 static
-BYTE matHat[DIM_A * DIM_A] = { 0 }, matGrave[DIM_A * DIM_A] = { 0 }, matAcute[DIM_A * DIM_A] = { 0 };
+BYTE matHat[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 }, matGrave[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 }, matAcute[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
 
 BYTE matA[DIM_A] = { 0 }, matInvA[DIM_A] = { 0 }, matTransA[DIM_A] = { 0 };
 BYTE matAs[L_SIZE] = { 0 }, matInvAs[L_SIZE] = { 0 }, matTransAs[L_SIZE] = { 0 };
@@ -183,7 +183,7 @@ Res hatA(
 
 	if (matTransA == NULL || matInvA == NULL) return RES_NON_MATA;
 	//row: DIM_A^2, col: DIM_A
-	BYTE matRight[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
+	BYTE matRight[DIM_A * DIM_A] = { 0 };
 	/* get transposition of the right matrix: (E' x (A tp B))^T */
 	for (i = 0; i < DIM_A; ++i){
 		ptrOfMatATi = matTransA + i;
@@ -207,9 +207,9 @@ Res acuteA(
 {
 	int i, j;
 	Res res = RES_OK;
-	BYTE matRight[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
+	BYTE matRight[DIM_A * DIM_A] = { 0 };
 	BYTE *ptrOfMatATj, *ptrOfMatR, *ptrOfMatI;
-	BYTE matE[DIM_A * DIM_A / LENGTH] = UNIT_MAT;
+	BYTE matE[DIM_A] = UNIT_MAT;
 	const int dimsH[4] = { DIM_A, DIM_A, DIM_A * DIM_A, DIM_A };
 	if (matTransA == NULL || matInvA == NULL) return RES_NON_MATA;
 
@@ -237,9 +237,9 @@ Res graveA(
 	int i, j;
 	Res res = RES_OK;
 	BYTE *ptrOfMatATi, *ptrOfMatR, *ptrOfMatI;
-	BYTE matE[DIM_A * DIM_A / LENGTH] = UNIT_MAT;
+	BYTE matE[DIM_A] = UNIT_MAT;
 
-	BYTE matRight[DIM_A * DIM_A * DIM_A / LENGTH] = { 0 };
+	BYTE matRight[DIM_A * DIM_A] = { 0 };
 	const int dimsH[4] = { DIM_A, DIM_A, DIM_A * DIM_A, DIM_A };
 	if (matTransA == NULL || matInvA == NULL) return RES_NON_MATA;
 	/* get transposition of the right matrix: (E' x (A tp E))^T */
@@ -282,35 +282,32 @@ const int *dims // {1, DIM_A}
 	memset(tensProdRes, 0, dims[0] * bytesOfRow(dims[1]));
 
 	#if DIM_A == 4
-	int bts = bytesOfRow(X_COL * X_COL);
-	for (i = 0; i < X_ROW; ++i) {
+	int bts = bytesOfRow(dims[1] * dims[1]);
+	for (i = 0; i < dims[0]; ++i) {
 		BYTE ident = UNIT_BYTE;
-
-		for (j = 0; j < X_COL ; j += 2){
+		for (j = 0; j < dims[1]; j += 2){
 			BYTE tem = 0x00;
-			if ((BYTE)matX[i] & ident){
+			if (matX[i] & ident){
 				tem ^= matY[i];
 			}
-			ident = ident >> 1;
-			if ((BYTE)matX[i] & ident){
-				tem ^= (BYTE)matY[i] >> 4;
-			}
-			matR[i * bts + j / 2] = tem;
 			ident >>= 1;
-
+			if (matX[i] & ident){
+				tem ^= matY[i] >> 4;
+			}
+			tensProdRes[i * bts + j / 2] = tem;
+			ident >>= 1;
 		}
 	}
-	#else /* DIM_A == 8 or 0 */
-
-	for (i = 0; i != dims[0]; ++i){
+	#else /* DIM_A != 4 */
+	for (i = 0; i < dims[0]; ++i){
 		BYTE unit = UNIT_BYTE;
-		for (j = 0; j != dims[3]; ++j){
+		for (j = 0; j < dims[3]; ++j){
 			tensProdRes[i * dims[1] + j] = (matX[i] & unit) ? matY[i] : 0x00;
 			unit >>= 1;
 		}
 	}
+	#endif /* DIM_A == 4? */
 
-	#endif /* DIM_A == 4 */
 	return RES_OK;
 }
 
@@ -562,8 +559,8 @@ const int *dims //{1, DIM_L, 1, DIM_L}
 			matEYPart[i] = matEY[i * btsMat + slicesIndex];
 			#elif DIM_A == 4
 			int offset = (slicesIndex < 2) ? 0 : 1;
-			matEXPart[i] = matEX[i][offset];
-			matEYPart[i] = matEY[i][offset];
+			matEXPart[i] = matEX[i * btsMat + offset];
+			matEYPart[i] = matEY[i * btsMat + offset];
 
 			if (oddFlag){//odd
 				matEXPart[i] &= 0x0f;
@@ -623,11 +620,12 @@ const int *dims //{1, DIM_L, 1, DIM_L}
 				int indexJI;
 				/* get R(i,j) through random generating */
 				index = i * MASKD + j;
-				indexJI = j * MASKD + i;
+				indexJI = j * MASKD + i;				
 				#if DIM_A == 4
-				randMat &= 0xf0;
+					matR[index] = (BYTE)rand() & 0xf0;
+				#else
+					matR[index] = (BYTE)rand();
 				#endif
-				matR[index] = (BYTE)rand();
 				/* get R(j,i)  */	
 				matR[indexJI] = matTij[indexJI] ^ matR[index] ^ matTij[index];
 				#if DIM_A
@@ -656,10 +654,10 @@ const int *dims //{1, DIM_L, 1, DIM_L}
 			#elif DIM_A == 4
 			int offset = (slicesIndex < 2) ? 0 : 1;
 			if (oddFlag){//odd
-				BYTE tem = matEZPart[i] >> 4;
-				bitAndRes[i][offset] ^= (tem & 0x0f);
+				bitAndRes[i * btsMat + offset] ^= (matEZPart[i] >> 4) & 0x0f;
 			}
-			else bitAndRes[i][offset] ^= matEZPart[i];
+			else
+				bitAndRes[i * btsMat + offset] ^= matEZPart[i];
 
 			#endif
 		}
@@ -795,7 +793,6 @@ const int *dims
 			BYTE vectTem;
 			int cntsVect, offset;
 
-
 			cntsVect = col / LENGTH;
 			offset = col % LENGTH;
 			ptrOfMatRet = multiRes + row * bytesOfRR + cntsVect;
@@ -808,7 +805,7 @@ const int *dims
 				 *	- popcount(): the result is a num, need to cast
 				 *  - lookupTable and sumOgByte: the result bit stores at the MSB
 				 */
-				//vectTem = (BYTE)__builtin_popcount((*ptrOfMatX) & (*ptrOfMatY)); 
+				//vectTem = (BYTE)__builtin_popcount((*ptrOfMatX) & (*ptrOfMatY)) & 0x01; 
 				//vectTem <<= (LENGTH - 1 - offset);
 				//vectTem = sumOfByte((*ptrOfMatX) & (*ptrOfMatY));
 
