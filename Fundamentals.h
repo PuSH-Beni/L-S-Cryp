@@ -80,7 +80,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if DIM_A == 4
+#define ITRMAX 16
+#else
 #define ITRMAX 256
+#endif
 
 /* If the compiler supports C11, 'stdbool.h' and 'stdint.h' can be used */
 #if C11_SUPPORT
@@ -312,7 +316,7 @@ Res bitAnd(BYTE *bitAndRes, const BYTE *matX, const BYTE *matY, const int *dims)
 /* Simple add operation, as same as  XOR, i.e. '^' */
 Res add(BYTE *addRes, const BYTE *matX, const  BYTE *matY, const int *dims);
 
-/* Transepositino */
+/* Transeposition */
 Res transpose(BYTE *transRes, const BYTE *matOrig, const int *dims);
 
 

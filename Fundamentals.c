@@ -23,10 +23,10 @@ BYTE matA[DIM_A] = { 0 }, matInvA[DIM_A] = { 0 }, matTransA[DIM_A] = { 0 };
 BYTE matAs[L_SIZE] = { 0 }, matInvAs[L_SIZE] = { 0 }, matTransAs[L_SIZE] = { 0 };
 
 static
-BYTE multi8[DIM_A * DIM_A / LENGTH * 3][ITRMAX] = { 0 };
+BYTE multi8[DIM_A * 3][256] = { 0 };
 
 static
-BYTE multiA[ITRMAX] = { 0 };
+BYTE multiA[256] = { 0 };
 #endif
 
 static const
@@ -43,6 +43,7 @@ BYTE div8[] = DIV;
 
 
 /* Shift bit form j -> i */
+_inline
 static
 BYTE shiftBit(
 BYTE orig,
@@ -63,7 +64,7 @@ int j
 
 
 /* Get sum of a byte */
-
+_inline
 static
 BYTE sumOfByte(
 BYTE byte
@@ -276,50 +277,21 @@ Res graveA(
  * Return a n x n^2 matrix
  * row: 1, col: X_COL^2;  BYTE[DIM_S*X_ROW]
  */
+_inline
 static
 Res tensorProduct(
 BYTE *tensProdRes,
-const BYTE *matX,
-const BYTE *matY,
-const int *dims // {1, DIM_A}
+BYTE matX,
+BYTE matY
 )
 {
-	int i, j;
-
-	if (matX == NULL || matY == NULL || tensProdRes == NULL) return RES_INVALID_POINTER;
-	if ((dims[0] != dims[2]) ||
-		(dims[1] != dims[3]) ||
-		(dims[1] > 8))return RES_INVALID_DIMENSION;
-
-	memset(tensProdRes, 0, dims[0] * bytesOfRow(dims[1]));
-
-#if DIM_A == 4
-	int bts = bytesOfRow(dims[1] * dims[1]);
-	for (i = 0; i < dims[0]; ++i) {
-		BYTE ident = UNIT_BYTE;
-		for (j = 0; j < dims[1]; j += 2){
-			BYTE tem = 0x00;
-			if (matX[i] & ident){
-				tem ^= matY[i];
-			}
-			ident >>= 1;
-			if (matX[i] & ident){
-				tem ^= matY[i] >> 4;
-			}
-			tensProdRes[i * bts + j / 2] = tem;
-			ident >>= 1;
-		}
+	int j;
+	if (tensProdRes == NULL) return RES_INVALID_POINTER;
+	BYTE unit = UNIT_BYTE;
+	for (j = 0; j < DIM_A; ++j){
+		tensProdRes[j] = (matX & unit) ? matY : 0x00;
+		unit >>= 1;
 	}
-#else /* DIM_A != 4 */
-	for (i = 0; i < dims[0]; ++i){
-		BYTE unit = UNIT_BYTE;
-		for (j = 0; j < dims[3]; ++j){
-			tensProdRes[i * dims[1] + j] = (matX[i] & unit) ? matY[i] : 0x00;
-			unit >>= 1;
-		}
-	}
-#endif /* DIM_A == 4? */
-
 	return RES_OK;
 }
 
@@ -331,6 +303,7 @@ const int *dims // {1, DIM_A}
  */
 
 /* Calculate the # of bytes in one row */
+_inline
 int bytesOfRow(
 	int col
 	)
@@ -342,9 +315,9 @@ int bytesOfRow(
 #if LENG16
 	bytes = col >> 4;
 #elif LENG8
-	bytes = col / 8; // col / LENGTH
+	bytes = div8[col]; // col / LENGTH
 #endif
-	bytes = (col % LENGTH) ? bytes + 1 : bytes;
+	bytes = mod8[col] ? bytes + 1 : bytes;
 	return bytes;
 }
 
@@ -363,28 +336,51 @@ Res setupMultiTable(
 	int matIndex;
 	BYTE vect;
 	BYTE * const mat[3] = { matHat, matGrave, matAcute };
-	const int tabs = DIM_A * DIM_A / LENGTH;
+	const int tabs = DIM_A;
 
+	/* look up table for matHat, matGrave, matAcute multiplication
+	 */
 	for (matIndex = 0; matIndex < 3; ++matIndex){
-		for (itr = 0, vect = 0x00; itr < ITRMAX; ++itr, ++vect){
+		for (itr = 0, vect = 0x00; itr < ITRMAX; ++itr){
 			for (tab = 0; tab < tabs; ++tab){
-				int tabN = matIndex * tabs + tab;
+				int tabCurr = matIndex * tabs + tab;
 				/* Multiplying */
 				int row;
+#if DIM_A == 4
+				BYTE *ptrMat = mat[matIndex];
+				ptrMat += tab < 2 ? 0 : 1;
+#else
 				BYTE *ptrMat = mat[matIndex] + tab;
-				for (row = 0; row < DIM_A; ++row, ptrMat += tabs)
+#endif
+				for (row = 0; row < DIM_A; ++row)
 				{
 					BYTE vectTem;
+#if DIM_A == 4
+					BYTE tem = tab & 0x01 ? (*ptrMat) << 4 : (*ptrMat);
+					vectTem = lookupTable[row][vect & tem];
+#else
 					vectTem = lookupTable[row][vect & (*ptrMat)];
+#endif
 					if (vectTem)
-						multi8[tabN][vect] ^= vectTem;
+						multi8[tabCurr][vect] ^= vectTem;
+#if DIM_A ==4 
+					ptrMat += 2;
+#else
+					ptrMat += tabs;
+#endif
 				}
 			}
+#if DIM_A == 4
+			vect += 0x10;
+#else
+			++vect;
+#endif
 		}
 	}
 
-
-	for (itr = 0, vect = 0x00; itr < ITRMAX; ++itr, ++vect){
+	/* look up table for matA multiplication
+	 */
+	for (itr = 0, vect = 0x00; itr < ITRMAX; ++itr){
 		int row;
 		BYTE *ptrMat = matA;
 		for (row = 0; row < DIM_A; ++row, ++ptrMat)
@@ -394,6 +390,11 @@ Res setupMultiTable(
 			if (vectTem)
 				multiA[vect] ^= vectTem;
 		}
+#if DIM_A == 4
+		vect += 0x10;
+#else
+		++vect;
+#endif
 	}
 
 	return RES_OK;
@@ -467,7 +468,7 @@ BYTE multiplyTable(
 {
 	int i;
 	BYTE ret = 0x00;
-	const int tabs = DIM_A * DIM_A / LENGTH;
+	const int tabs = DIM_A;
 	BYTE realIndex = index * tabs;
 
 	for (i = 0; i < tabs; ++i){
@@ -662,7 +663,7 @@ Res bitAndWithMask(
 				index = i * MASKD + j;
 #if DIM_A
 				if (i == 0 && j == 0){
-					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					res = tensorProduct(matTem, matEXPart[i], matEYPart[j]);
 					CHECK(res);
 					//res = multiply(matTij + index, (const BYTE *)matTem, (const BYTE *)matHat, dimsM);
 					//CHECK(res);
@@ -670,7 +671,7 @@ Res bitAndWithMask(
 
 				}
 				else if (i == 0){
-					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					res = tensorProduct(matTem, matEXPart[i], matEYPart[j]);
 					CHECK(res);
 					//res = multiply(matTij + index, (const BYTE *)matTem, (const BYTE *)matGrave, dimsM);
 					//CHECK(res);
@@ -678,7 +679,7 @@ Res bitAndWithMask(
 
 				}
 				else if (j == 0){
-					res = tensorProduct(matTem, (const BYTE *)matEXPart + i, (const BYTE *)matEYPart + j, dimsTensor);
+					res = tensorProduct(matTem, matEXPart[i], matEYPart[j]);
 					CHECK(res);
 					//res = multiply(matTij + index, (const BYTE *)matTem, (const BYTE *)matAcute, dimsM);
 					//CHECK(res);
@@ -716,14 +717,14 @@ Res bitAndWithMask(
 #if DIM_A
 				/*  get R(0,j) */
 				if (i == 0){
-					matR[j] = multiA[matR[j]];			
-						//BYTE tem;
-					 	//index = j;
-					 	//tem = matR[index];
-					 	//const int dimsT[4] = { 1, DIM_A, DIM_A, DIM_A };
-					 	//res = multiply(matR + index, (const BYTE *)&tem, (const BYTE *)matA, dimsT);
-					 	//CHECK(res);
-					 
+					matR[j] = multiA[matR[j]];
+					//BYTE tem;
+					//index = j;
+					//tem = matR[index];
+					//const int dimsT[4] = { 1, DIM_A, DIM_A, DIM_A };
+					//res = multiply(matR + index, (const BYTE *)&tem, (const BYTE *)matA, dimsT);
+					//CHECK(res);
+
 				}
 #endif  /* DIM_A != 0 */
 			}
@@ -893,10 +894,9 @@ Res multiply(
 				 *  - lookupTable and sumOgByte: the result bit stores at the MSB
 				 */
 				//vectTem = (BYTE)__builtin_popcount((*ptrOfMatX) & (*ptrOfMatY)) & 0x01; 
-				//vectTem <<= (LENGTH - 1 - offset);
+				//vectTem <<= (LENGT H - 1 - offset);
 				//vectTem >>= offset;
 				//vectTem = sumOfByte((*ptrOfMatX) & (*ptrOfMatY));
-
 				vectTem = lookupTable[mod8[col]][(*ptrMatX) & (*ptrMatY)];
 				if (vectTem)
 					(*ptrMatRes) ^= vectTem;

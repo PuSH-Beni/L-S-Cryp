@@ -122,6 +122,7 @@ int main(){
 		//res = encrypto_fixed();
 	}	
 	double timeEnd = (double)clock();
+
 	printf("\n\n  --> result:\n");
 	outputMat(cipher, 16);
 
